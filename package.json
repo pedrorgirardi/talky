@@ -2,7 +2,7 @@
     "name": "talky",
     "displayName": "Talky",
     "description": "Talk to a Clojure Socket REPL.",
-    "version": "0.1.0",
+    "version": "0.2.0-SNAPSHOT",
     "publisher": "pedrorgirardi",
     "engines": {
         "vscode": "^1.23.0"
@@ -55,6 +55,6 @@
         "vscode": "^1.1.18"
     },
     "devDependencies": {
-        "shadow-cljs": "^2.4.8"
+        "shadow-cljs": "2.6.6"
     }
 }
