@@ -1,0 +1,60 @@
+{
+    "name": "talky",
+    "displayName": "Talky",
+    "description": "Talk to a Clojure Socket REPL.",
+    "version": "0.1.0",
+    "publisher": "pedrorgirardi",
+    "engines": {
+        "vscode": "^1.23.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/pedrorgirardi/talky.git"
+    },
+    "activationEvents": [
+        "onLanguage:clojure"
+    ],
+    "main": "./extension",
+    "contributes": {
+        "commands": [
+            {
+                "title": "Connect",
+                "category": "Talky",
+                "command": "talky.connect"
+            },
+            {
+                "title": "Disconnect",
+                "category": "Talky",
+                "command": "talky.disconnect"
+            },
+            {
+                "title": "Send Selection to REPL",
+                "category": "Talky",
+                "command": "talky.sendSelectionToREPL"
+            },
+            {
+                "title": "Switch Namespace to Current File",
+                "category": "Talky",
+                "command": "talky.switchNamespaceToCurrentFile"
+            }
+        ]
+    },
+    "scripts": {
+        "clean": "rm -rf .shadow-cljs/",
+        "watch": "npx shadow-cljs watch :extension",
+        "compile": "npx shadow-cljs compile :extension",
+        "release": "npx shadow-cljs release :extension",
+        "vscode:prepublish": "npm run clean && npm run release",
+        "postinstall": "node ./node_modules/vscode/bin/install",
+        "test": "node ./node_modules/vscode/bin/test"
+    },
+    "dependencies": {
+        "vscode": "^1.1.18"
+    },
+    "devDependencies": {
+        "shadow-cljs": "^2.4.8"
+    }
+}
