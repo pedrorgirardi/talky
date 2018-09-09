@@ -2,11 +2,13 @@
   (:require
    ["vscode" :as vscode]
    ["net" :as net]
+   ["child_process" :as child-process]
 
    [talky.gui :as gui]
    [talky.document :as document]
    [talky.workspace :as workspace]
 
+   [cljs.nodejs :as nodejs]
    [clojure.string :as str]))
 
 
@@ -57,22 +59,24 @@
            (when host
              (.then (gui/show-input-box {:ignoreFocusOut true
                                          :prompt "Port"
-                                         :value (str (workspace/socket-repl-port!))})
+                                         :value (str (or (get-in @*sys [:talky/repl :talky.repl/port])
+                                                         (workspace/socket-repl-port!)))})
                     (fn [port]
                       (when port
                         (let [socket (doto (net/connect #js {:host host
                                                              :port (js/parseInt port)})
                                            (.once "connect" (fn []
-                                                              (gui/show-information-message (str "Talky is connected and ready to talk."))
+                                                              (gui/show-information-message
+                                                               (str "Talky is connected and ready to talk."))
 
                                                               (swap! *sys update :talky/connection assoc :talky/connected? true)))
                                            (.once "close" (fn [error?]
-                                                            (gui/show-information-message (if error?
-                                                                                            "Talky was disconnected due an error. Sorry."
-                                                                                            "Talky is disconnected. Talk later."))
+                                                            (gui/show-information-message
+                                                             (if error?
+                                                               "Talky was disconnected due an error. Sorry."
+                                                               "Talky is disconnected. Talk later."))
 
                                                             (swap! *sys assoc :talky/connection {:talky/connected? false})))
-
                                            (.on "data" (fn [^js buffer]
                                                          (let [output-channel (get @*sys :talky/output-channel)]
                                                            (.appendLine output-channel (.toString buffer "utf8"))
@@ -81,7 +85,7 @@
 
 
 
-(defn- ^{:cmd "talky.disconnect"} disconnect [*sys]
+(defn ^{:cmd "talky.disconnect"} disconnect [*sys]
   (swap! *sys update :talky/connection (fn [{:keys [talky/socket talky/connected?] :as connection}]
                                          (if (and socket connected?)
                                            (.end socket)
@@ -102,6 +106,39 @@
     (talk! *sys (str "(in-ns '" (document/ns-name (.-document editor)) ")"))))
 
 
+(defn ^{:cmd "talky.launchREPL"} launch-repl [*sys]
+  (let [port    5555
+        config  `{:port ~port :accept clojure.core.server/repl}
+
+        process (child-process/spawn "clojure" #js [(str "-J-Dclojure.server.repl=" config)])
+
+        _       (.once (.-stdout process) "data"
+                       (fn [_]
+                         (let [output-channel (get @*sys :talky/output-channel)]
+                           (.appendLine output-channel (str "Socket-based REPL is running at port " port ".\n"))
+                           (.show output-channel false))))
+
+        _       (.on (.-stderr process) "data"
+                     (fn [data]
+                       (let [output-channel (get @*sys :talky/output-channel)]
+                         (.appendLine output-channel data)
+                         (.show output-channel false))))
+
+        _       (.on process "close"
+                     (fn [code]
+                       (let [output-channel (get @*sys :talky/output-channel)]
+                         (.appendLine output-channel (str "\nREPL exited with code " code ".\n"))
+                         (.show output-channel false))))]
+
+    (swap! *sys assoc :talky/repl {:talky.repl/port port
+                                   :talky.repl/process process})))
+
+
+(defn ^{:cmd "talky.killREPL"} kill-repl [*sys]
+  (when-let [^js process (get-in @*sys [:talky/repl :talky.repl/process])]
+    (.kill process)))
+
+
 (def *sys
   (atom {}))
 
@@ -119,6 +156,12 @@
          (register-disposable context))
 
     (->> (register-text-editor-command *sys #'switch-namespace-to-current-file)
+         (register-disposable context))
+
+    (->> (register-command *sys #'launch-repl)
+         (register-disposable context))
+
+    (->> (register-command *sys #'kill-repl)
          (register-disposable context))
 
     (reset! *sys {:talky/output-channel output-channel})

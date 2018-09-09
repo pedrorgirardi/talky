@@ -39,6 +39,16 @@
                 "title": "Switch Namespace to Current File",
                 "category": "Talky",
                 "command": "talky.switchNamespaceToCurrentFile"
+            },
+            {
+                "title": "Launch socket-based REPL",
+                "category": "Talky",
+                "command": "talky.launchREPL"
+            },
+            {
+                "title": "Kill REPL",
+                "category": "Talky",
+                "command": "talky.killREPL"
             }
         ]
     },
