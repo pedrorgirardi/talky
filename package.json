@@ -1,7 +1,7 @@
 {
     "name": "talky",
     "displayName": "Talky",
-    "description": "Talk to a Clojure Socket REPL.",
+    "description": "Talk to a Clojure socket-based REPL.",
     "version": "0.3.0-SNAPSHOT",
     "publisher": "pedrorgirardi",
     "engines": {
@@ -15,7 +15,13 @@
         "url": "https://github.com/pedrorgirardi/talky.git"
     },
     "activationEvents": [
-        "onLanguage:clojure"
+        "onLanguage:clojure",
+        "onCommand:talky.connect",
+        "onCommand:talky.disconnect",
+        "onCommand:talky.sendSelectionToREPL",
+        "onCommand:talky.switchNamespaceToCurrentFile",
+        "onCommand:talky.launchREPL",
+        "onCommand:talky.killREPL"
     ],
     "main": "./extension",
     "contributes": {
@@ -41,7 +47,7 @@
                 "command": "talky.switchNamespaceToCurrentFile"
             },
             {
-                "title": "Launch socket-based REPL",
+                "title": "Launch REPL",
                 "category": "Talky",
                 "command": "talky.launchREPL"
             },
@@ -65,6 +71,6 @@
         "vscode": "^1.1.18"
     },
     "devDependencies": {
-        "shadow-cljs": "2.6.6"
+        "shadow-cljs": "2.6.10"
     }
 }
