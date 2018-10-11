@@ -19,9 +19,7 @@
         "onCommand:talky.connect",
         "onCommand:talky.disconnect",
         "onCommand:talky.sendSelectionToREPL",
-        "onCommand:talky.switchNamespaceToCurrentFile",
-        "onCommand:talky.launchREPL",
-        "onCommand:talky.killREPL"
+        "onCommand:talky.switchNamespaceToCurrentFile"
     ],
     "main": "./extension",
     "contributes": {
@@ -45,16 +43,6 @@
                 "title": "Switch Namespace to Current File",
                 "category": "Talky",
                 "command": "talky.switchNamespaceToCurrentFile"
-            },
-            {
-                "title": "Launch REPL",
-                "category": "Talky",
-                "command": "talky.launchREPL"
-            },
-            {
-                "title": "Kill REPL",
-                "category": "Talky",
-                "command": "talky.killREPL"
             }
         ]
     },
