@@ -126,7 +126,7 @@
 
     (reset! *sys {:talky/output-channel output-channel})
 
-    (.appendLine output-channel "Talky is active. Talk nicely.\n"))
+    (.appendLine output-channel "Talky is active.\n"))
 
   nil)
 
