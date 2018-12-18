@@ -15,11 +15,9 @@
         "url": "https://github.com/pedrorgirardi/talky.git"
     },
     "activationEvents": [
-        "onLanguage:clojure",
         "onCommand:talky.connect",
         "onCommand:talky.disconnect",
-        "onCommand:talky.sendSelectionToREPL",
-        "onCommand:talky.switchNamespaceToCurrentFile"
+        "onCommand:talky.sendSelectionToREPL"
     ],
     "main": "./extension",
     "contributes": {
@@ -38,11 +36,6 @@
                 "title": "Send Selection to REPL",
                 "category": "Talky",
                 "command": "talky.sendSelectionToREPL"
-            },
-            {
-                "title": "Switch Namespace to Current File",
-                "category": "Talky",
-                "command": "talky.switchNamespaceToCurrentFile"
             }
         ]
     },

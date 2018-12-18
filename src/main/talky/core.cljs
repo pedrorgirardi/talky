@@ -41,12 +41,65 @@
   (-> (.-subscriptions context)
       (.push disposable)))
 
-(defn talk! [*sys message]
-  (js/console.log "[Talky] MESSAGE " message)
+(defn make-socket-client
+  [{:socket/keys [host port config on-connect on-close on-data]
+    :or {config
+         {:socket/encoder
+          (fn [data]
+            ;; See https://nodejs.org/api/net.html#net_socket_write_data_encoding_callback
+            data)
 
-  (swap! *sys update :talky/history (fnil conj []) message)
+          ;; You can also set the encoding.
+          ;; See https://nodejs.org/api/net.html#net_socket_setencoding_encoding
+          ;; :socket/encoding "utf8"
 
-  (.write ^js (get-in @*sys [:talky/connection :talky/socket]) (str message "\n")))
+          :socket/decoder
+          (fn [buffer-or-string]
+            ;; See https://nodejs.org/api/net.html#net_event_data
+            buffer-or-string)}
+
+         on-connect
+         (fn [socket]
+           ;; Do stuff and returns nil.
+           nil)
+
+         on-close
+         (fn [socket error?]
+           ;; Do stuff and returns nil.
+           nil)
+
+         on-data
+         (fn [socket buffer-or-string]
+           ;; Do stuff and returns nil.
+           nil)}
+    :as socket}]
+  (let [net-socket (doto (net/connect #js {:host host :port port})
+                     (.once "connect"
+                            (fn []
+                              (on-connect socket)))
+                     (.once "close"
+                            (fn [error?]
+                              (on-close socket error?)))
+                     (.on "data"
+                          (fn [buffer]
+                            (let [{:socket/keys [decoder]} config]
+                              (on-data socket (decoder buffer))))))
+
+        net-socket (if-let [encoding (:socket/encoding config)]
+                     (.setEncoding net-socket encoding)
+                     net-socket)]
+    {:socket.api/write!
+     (fn write [data]
+       (let [{:socket/keys [encoder]} config]
+         (.write ^js net-socket (encoder data))))
+
+     :socket.api/end!
+     (fn []
+       (.end ^js net-socket))
+
+     :socket.api/connected?
+     (fn []
+       (not (.-pending ^js net-socket)))}))
 
 (defn- ^{:cmd "talky.connect"} connect [*sys]
   (.then (gui/show-input-box {:ignoreFocusOut true
@@ -61,50 +114,62 @@
                                                          5555))})
                     (fn [port]
                       (when port
-                        (let [socket (doto (net/connect #js {:host host
-                                                             :port (js/parseInt port)})
-                                       (.once "connect" (fn []
-                                                          (gui/show-information-message
-                                                           (str "Talky is connected and ready to talk."))
+                        (let [config
+                              {:socket/encoding "utf8"
 
-                                                          (swap! *sys update :talky/connection assoc :talky/connected? true)))
-                                       (.once "close" (fn [error?]
-                                                        (gui/show-information-message
-                                                         (if error?
-                                                           "Talky was disconnected due an error. Sorry."
-                                                           "Talky is disconnected. Talk later."))
+                               :socket/decoder
+                               (fn [buffer-or-string]
+                                 ;; It's a string because encoding is set as utf8.
+                                 buffer-or-string)
 
-                                                        (swap! *sys assoc :talky/connection {:talky/connected? false})))
-                                       (.on "data" (fn [^js buffer]
-                                                     (let [output-channel (get @*sys :talky/output-channel)
-                                                           o (reader/read-string (.toString buffer "utf8"))]
+                               :socket/encoder
+                               (fn [data]
+                                 (str data "\n"))}
 
-                                                       (.appendLine output-channel (if (and (map? o) (:tag o))
-                                                                                     (condp = (:tag o)
-                                                                                       :out (str "out -> " (:val o))
-                                                                                       :ret (str (:ns o) " -> " (:val o)))
-                                                                                     (.toString buffer "utf8")))
+                              on-connect
+                              (fn [_]
+                                (gui/show-information-message
+                                 (str "Talky is connected.")))
 
-                                                       (.show output-channel true)))))]
-                          (swap! *sys assoc :talky/connection {:talky/socket socket})))))))))
+                              on-close
+                              (fn [_ error?]
+                                (gui/show-information-message
+                                 (if error?
+                                   "Talky was disconnected due an error. Sorry."
+                                   "Talky is disconnected.")))
+
+                              on-data
+                              (fn [_ buffer]
+                                (let [^js output-channel (get @*sys :talky/output-channel)]
+                                  (.appendLine output-channel buffer)
+
+                                  (.show output-channel true)))
+
+                              socket-client
+                              (make-socket-client
+                               #:socket {:host host
+                                         :port (js/parseInt port)
+                                         :config config
+                                         :on-connect on-connect
+                                         :on-close on-close
+                                         :on-data on-data})]
+
+                          (swap! *sys assoc :talky/socket-client socket-client)))))))))
 
 (defn ^{:cmd "talky.disconnect"} disconnect [*sys]
-  (swap! *sys update :talky/connection (fn [{:keys [talky/socket talky/connected?] :as connection}]
-                                         (if (and socket connected?)
-                                           (.end socket)
-                                           connection))))
+  (let [{:socket.api/keys [end!]} (get @*sys :talky/socket-client)]
+    (when end!
+      (end!))))
 
 (defn ^{:cmd "talky.sendSelectionToREPL"} send-selection-to-repl [*sys editor edit args]
   (let [document      (.-document editor)
         selection     (.-selection editor)
         range         (vscode/Range. (.-start selection) (.-end selection))
-        selected-text (.getText document range)]
-    (when (get-in @*sys [:talky/connection :talky/connected?])
-      (talk! *sys selected-text))))
+        selected-text (.getText document range)
 
-(defn ^{:cmd "talky.switchNamespaceToCurrentFile"} switch-namespace-to-current-file [*sys editor edit args]
-  (when (get-in @*sys [:talky/connection :talky/connected?])
-    (talk! *sys (str "(in-ns '" (document/ns-name (.-document editor)) ")"))))
+        {:socket.api/keys [write! connected?]} (get @*sys :talky/socket-client)]
+    (when connected?
+      (write! selected-text))))
 
 (def *sys
   (atom {}))
@@ -119,9 +184,6 @@
          (register-disposable context))
 
     (->> (register-text-editor-command *sys #'send-selection-to-repl)
-         (register-disposable context))
-
-    (->> (register-text-editor-command *sys #'switch-namespace-to-current-file)
          (register-disposable context))
 
     (reset! *sys {:talky/output-channel output-channel})
