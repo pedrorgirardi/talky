@@ -102,16 +102,18 @@
        (not (.-pending ^js net-socket)))}))
 
 (defn- ^{:cmd "talky.connect"} connect [*sys]
-  (.then (gui/show-input-box {:ignoreFocusOut true
-                              :prompt "Host"
-                              :value "localhost"})
+  (.then (gui/show-input-box
+          {:ignoreFocusOut true
+           :prompt "Host"
+           :value "localhost"})
          (fn [host]
            (when host
-             (.then (gui/show-input-box {:ignoreFocusOut true
-                                         :prompt "Port"
-                                         :value (str (or (get-in @*sys [:talky/repl :talky.repl/port])
-                                                         (workspace/socket-repl-port!)
-                                                         5555))})
+             (.then (gui/show-input-box
+                     {:ignoreFocusOut true
+                      :prompt "Port"
+                      :value (str (or (get-in @*sys [:talky/repl :talky.repl/port])
+                                      (workspace/socket-repl-port!)
+                                      5555))})
                     (fn [port]
                       (when port
                         (let [config
