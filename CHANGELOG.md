@@ -1,5 +1,8 @@
 # Change Log
 
+## [0.3.0]
+This release removed some commands and introduced a new socket client.
+
 ## [0.2.0]
 Introduces two new commands:
 * Launch socket-based REPL
