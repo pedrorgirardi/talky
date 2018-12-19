@@ -2,16 +2,13 @@
   (:require
    ["vscode" :as vscode]
    ["net" :as net]
-   ["child_process" :as child-process]
 
    [talky.gui :as gui]
-   [talky.document :as document]
    [talky.workspace :as workspace]
 
    [cljs.reader :as reader]
    [cljs.nodejs :as nodejs]
-   [kitchen-async.promise :as p]
-   [clojure.string :as str]))
+   [kitchen-async.promise :as p]))
 
 (defn- register-command [*sys cmd]
   (let [cmd-name (-> cmd meta :cmd)
