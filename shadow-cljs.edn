@@ -7,6 +7,8 @@
 
  :builds
  {:extension
-  {:target    :node-library
-   :exports   {:activate talky.core/activate}
-   :output-to "extension.js"}}}
+  {:target :node-library
+   :output-to "extension.js"
+   :exports
+   {:activate talky.core/activate
+    :deactivate talky.core/deactivate}}}}
