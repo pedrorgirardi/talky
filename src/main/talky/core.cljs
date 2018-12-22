@@ -153,15 +153,13 @@
     (when end!
       (end!))))
 
-(defn ^{:cmd "talky.sendSelectionToREPL"} send-selection-to-repl [*sys editor edit args]
-  (let [document      (.-document editor)
-        selection     (.-selection editor)
-        range         (vscode/Range. (.-start selection) (.-end selection))
-        selected-text (.getText document range)
-
+(defn ^{:cmd "talky.sendSelectionToREPL"} send-selection-to-repl [*sys ^js editor ^js edit ^js args]
+  (let [^js document  (.-document editor)
+        ^js selection (.-selection editor)
+        
         {:socket.api/keys [write! connected?]} (get @*sys :talky/socket-client)]
     (when connected?
-      (write! selected-text))))
+      (write! (.getText document selection)))))
 
 (def *sys
   (atom {}))
