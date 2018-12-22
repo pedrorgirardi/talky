@@ -4,10 +4,6 @@
    ["net" :as net]
 
    [talky.gui :as gui]
-   [talky.workspace :as workspace]
-
-   [cljs.reader :as reader]
-   [cljs.nodejs :as nodejs]
    [kitchen-async.promise :as p]))
 
 (defn- register-command [*sys cmd]
@@ -108,18 +104,15 @@
              (.then (gui/show-input-box
                      {:ignoreFocusOut true
                       :prompt "Port"
-                      :value (str (or (get-in @*sys [:talky/repl :talky.repl/port])
-                                      (workspace/socket-repl-port!)
-                                      5555))})
+                      :value (str 5555)})
                     (fn [port]
                       (when port
                         (let [config
                               {:socket/encoding "utf8"
 
                                :socket/decoder
-                               (fn [buffer-or-string]
-                                 ;; It's a string because encoding is set as utf8.
-                                 buffer-or-string)
+                               (fn [data]
+                                 data)
 
                                :socket/encoder
                                (fn [data]
