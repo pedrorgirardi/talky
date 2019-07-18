@@ -1,9 +1,9 @@
-{:dependencies
- [[cljs-node-io "1.1.2"]
-  [kitchen-async "0.1.0-SNAPSHOT"]]
+{:source-paths ["src/main"]
 
- :source-paths
- ["src/main"]
+ :dependencies
+ [[cljs-node-io "1.1.2"]
+  [kitchen-async "0.1.0-SNAPSHOT"]
+  [appliedscience/js-interop "0.1.20"]]
 
  :builds
  {:extension

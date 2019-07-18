@@ -4,7 +4,8 @@
    ["net" :as net]
 
    [talky.gui :as gui]
-   [kitchen-async.promise :as p]))
+   [kitchen-async.promise :as p]
+   [applied-science.js-interop :as j]))
 
 (defn- register-command [*sys cmd]
   (let [cmd-name (-> cmd meta :cmd)
@@ -16,7 +17,7 @@
                      (catch js/Error e
                        (js/console.error (str "[Talky] FAILED TO RUN COMMAND '" cmd-name "'") e))))]
 
-    (vscode/commands.registerCommand cmd-name callback)))
+    (j/call-in vscode [.-commands .-registerCommand] cmd-name callback)))
 
 (defn- register-text-editor-command [*sys cmd]
   (let [cmd-name (-> cmd meta :cmd)
@@ -28,11 +29,10 @@
                      (catch js/Error e
                        (js/console.error (str "[Talky] FAILED TO RUN EDITOR COMMAND '" cmd-name "'") e))))]
 
-    (vscode/commands.registerTextEditorCommand cmd-name callback)))
+    (j/call-in vscode [.-commands .-registerTextEditorCommand] cmd-name callback)))
 
 (defn- register-disposable [^js context ^js disposable]
-  (-> (.-subscriptions context)
-      (.push disposable)))
+  (j/call-in context [.-subscriptions .-push] disposable))
 
 (defn make-socket-client
   [{:socket/keys [host port config on-connect on-close on-data]
@@ -165,7 +165,7 @@
   (atom {}))
 
 (defn activate [^js context]
-  (let [output-channel (vscode/window.createOutputChannel "Talky")]
+  (let [^js output-channel (j/call-in vscode [.-window .-createOutputChannel] "Talky")]
 
     (->> (register-command *sys #'connect)
          (register-disposable context))
