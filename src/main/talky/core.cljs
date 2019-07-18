@@ -4,8 +4,7 @@
    ["net" :as net]
 
    [talky.gui :as gui]
-   [kitchen-async.promise :as p]
-   [applied-science.js-interop :as j]))
+   [kitchen-async.promise :as p]))
 
 (defn- register-command [*sys cmd]
   (let [cmd-name (-> cmd meta :cmd)
@@ -17,7 +16,8 @@
                      (catch js/Error e
                        (js/console.error (str "[Talky] FAILED TO RUN COMMAND '" cmd-name "'") e))))]
 
-    (j/call-in vscode [.-commands .-registerCommand] cmd-name callback)))
+    (-> (.-commands ^js vscode)
+        (.registerCommand cmd-name callback))))
 
 (defn- register-text-editor-command [*sys cmd]
   (let [cmd-name (-> cmd meta :cmd)
@@ -29,10 +29,12 @@
                      (catch js/Error e
                        (js/console.error (str "[Talky] FAILED TO RUN EDITOR COMMAND '" cmd-name "'") e))))]
 
-    (j/call-in vscode [.-commands .-registerTextEditorCommand] cmd-name callback)))
+    (-> (.-commands ^js vscode)
+        (.registerTextEditorCommand cmd-name callback))))
 
 (defn- register-disposable [^js context ^js disposable]
-  (j/call-in context [.-subscriptions .-push] disposable))
+  (-> (.-subscriptions context)
+      (.push disposable)))
 
 (defn make-socket-client
   [{:socket/keys [host port config on-connect on-close on-data]
@@ -164,8 +166,13 @@
 (def *sys
   (atom {}))
 
+
+;; How to start a Clojure socket-based REPL
+;; clj -J-Dclojure.server.repl="{:port 5555 :accept clojure.core.server/repl}"
+
 (defn activate [^js context]
-  (let [^js output-channel (j/call-in vscode [.-window .-createOutputChannel] "Talky")]
+  (let [^js output-channel (-> (.-window ^js vscode)
+                               (.createOutputChannel "Talky"))]
 
     (->> (register-command *sys #'connect)
          (register-disposable context))
