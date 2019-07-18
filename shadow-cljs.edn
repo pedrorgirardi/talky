@@ -1,7 +1,7 @@
 {:source-paths ["src/main"]
 
  :dependencies
- [[kitchen-async "0.1.0-SNAPSHOT"]]
+ []
 
  :builds
  {:extension

@@ -3,8 +3,7 @@
    ["vscode" :as vscode]
    ["net" :as net]
 
-   [talky.window :as window]
-   [kitchen-async.promise :as p]))
+   [talky.window :as window]))
 
 (defn- register-command [*sys cmd]
   (let [cmd-name (-> cmd meta :cmd)
