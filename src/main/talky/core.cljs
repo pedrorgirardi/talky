@@ -123,7 +123,7 @@
                               on-connect
                               (fn [_]
                                 (window/show-information-message
-                                 (str "Talky is connected.")))
+                                 "Talky is connected."))
 
                               on-close
                               (fn [_ error?]
@@ -151,9 +151,11 @@
                           (swap! *sys assoc :talky/socket-client socket-client)))))))))
 
 (defn ^{:cmd "talky.disconnect"} disconnect [*sys]
-  (let [{:socket.api/keys [end!]} (get @*sys :talky/socket-client)]
-    (when end!
-      (end!))))
+  (if-let [{:socket.api/keys [end!]} (get @*sys :talky/socket-client)]
+    (do
+      (end!)
+      (swap! *sys dissoc :talky/socket-client))
+    (window/show-information-message "Talky is already disconnected.")))
 
 (defn ^{:cmd "talky.sendSelectionToREPL"} send-selection-to-repl [*sys ^js editor ^js edit ^js args]
   (let [^js document  (.-document editor)
@@ -190,5 +192,6 @@
   nil)
 
 (defn deactivate []
-  (disconnect *sys))
+  (when-let [{:socket.api/keys [end!]} (get @*sys :talky/socket-client)]
+    (end!)))
 
