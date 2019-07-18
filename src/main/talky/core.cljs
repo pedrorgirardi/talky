@@ -96,73 +96,79 @@
      (fn []
        (not (.-pending ^js net-socket)))}))
 
+(defn connected? [{:keys [socket.api/connected?]}]
+  (and connected? (connected?)))
+
 (defn- ^{:cmd "talky.connect"} connect [*sys]
-  (.then (window/show-input-box
-          {:ignoreFocusOut true
-           :prompt "Host"
-           :value "localhost"})
-         (fn [host]
-           (when host
-             (.then (window/show-input-box
-                     {:ignoreFocusOut true
-                      :prompt "Port"
-                      :value (str 5555)})
-                    (fn [port]
-                      (when port
-                        (let [config
-                              {:socket/encoding "utf8"
+  (if (connected? (get @*sys :talky/socket-client))
+    (window/show-information-message "Talky is connected.")
+    (.then (window/show-input-box
+            {:ignoreFocusOut true
+             :prompt "Host"
+             :value "localhost"})
+           (fn [host]
+             (when host
+               (.then (window/show-input-box
+                       {:ignoreFocusOut true
+                        :prompt "Port"
+                        :value (str 5555)})
+                      (fn [port]
+                        (when port
+                          (let [config
+                                {:socket/encoding "utf8"
 
-                               :socket/decoder
-                               (fn [data]
-                                 data)
+                                 :socket/decoder
+                                 (fn [data]
+                                   data)
 
-                               :socket/encoder
-                               (fn [data]
-                                 (str data "\n"))}
+                                 :socket/encoder
+                                 (fn [data]
+                                   (str data "\n"))}
 
-                              on-connect
-                              (fn [_]
-                                (window/show-information-message
-                                 "Talky is connected."))
+                                on-connect
+                                (fn [_]
+                                  (window/show-information-message
+                                   "Talky is connected."))
 
-                              on-close
-                              (fn [_ error?]
-                                (window/show-information-message
-                                 (if error?
-                                   "Talky was disconnected due an error. Sorry."
-                                   "Talky is disconnected.")))
+                                on-close
+                                (fn [_ error?]
+                                  (window/show-information-message
+                                   (if error?
+                                     "Talky was disconnected due an error. Sorry."
+                                     "Talky is disconnected.")))
 
-                              on-data
-                              (fn [_ buffer]
-                                (let [^js output-channel (get @*sys :talky/output-channel)]
-                                  (.appendLine output-channel buffer)
+                                on-data
+                                (fn [_ buffer]
+                                  (let [^js output-channel (get @*sys :talky/output-channel)]
+                                    (.appendLine output-channel buffer)
 
-                                  (.show output-channel true)))
+                                    (.show output-channel true)))
 
-                              socket-client
-                              (make-socket-client
-                               #:socket {:host host
-                                         :port (js/parseInt port)
-                                         :config config
-                                         :on-connect on-connect
-                                         :on-close on-close
-                                         :on-data on-data})]
+                                socket-client
+                                (make-socket-client
+                                 #:socket {:host host
+                                           :port (js/parseInt port)
+                                           :config config
+                                           :on-connect on-connect
+                                           :on-close on-close
+                                           :on-data on-data})]
 
-                          (swap! *sys assoc :talky/socket-client socket-client)))))))))
+                            (swap! *sys assoc :talky/socket-client socket-client))))))))))
 
 (defn ^{:cmd "talky.disconnect"} disconnect [*sys]
-  (if-let [{:socket.api/keys [end!]} (get @*sys :talky/socket-client)]
-    (do
-      (end!)
-      (swap! *sys dissoc :talky/socket-client))
-    (window/show-information-message "Talky is already disconnected.")))
+  (let [{:socket.api/keys [end!] :as socket-client} (get @*sys :talky/socket-client)]
+    (if (connected? socket-client)
+      (do
+        (end!)
+        (swap! *sys dissoc :talky/socket-client))
+      (window/show-information-message "Talky is disconnected."))))
 
 (defn ^{:cmd "talky.sendSelectionToREPL"} send-selection-to-repl [*sys ^js editor ^js edit ^js args]
   (let [^js document  (.-document editor)
         ^js selection (.-selection editor)
 
-        {:socket.api/keys [write! connected?]} (get @*sys :talky/socket-client)]
-    (if connected?
+        {:socket.api/keys [write!] :as socket-client} (get @*sys :talky/socket-client)]
+    (if (connected? socket-client)
       (write! (.getText document selection))
       (window/show-information-message "Talky is disconnected."))))
 
@@ -193,6 +199,7 @@
   nil)
 
 (defn deactivate []
-  (when-let [{:socket.api/keys [end!]} (get @*sys :talky/socket-client)]
-    (end!)))
+  (let [{:socket.api/keys [end!] :as socket-client} (get @*sys :talky/socket-client)]
+    (when (connected? socket-client)
+      (end!))))
 
