@@ -160,10 +160,11 @@
 (defn ^{:cmd "talky.sendSelectionToREPL"} send-selection-to-repl [*sys ^js editor ^js edit ^js args]
   (let [^js document  (.-document editor)
         ^js selection (.-selection editor)
-        
+
         {:socket.api/keys [write! connected?]} (get @*sys :talky/socket-client)]
-    (when connected?
-      (write! (.getText document selection)))))
+    (if connected?
+      (write! (.getText document selection))
+      (window/show-information-message "Talky is disconnected."))))
 
 (def *sys
   (atom {}))
