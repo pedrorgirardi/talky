@@ -83,21 +83,20 @@
         net-socket (if-let [encoding (:socket/encoding config)]
                      (.setEncoding net-socket encoding)
                      net-socket)]
-    {:socket.api/write!
+    {:socket net-socket
+
+     :write!
      (fn write [data]
        (let [{:socket/keys [encoder]} config]
          (.write ^js net-socket (encoder data))))
 
-     :socket.api/end!
+     :end!
      (fn []
-       (.end ^js net-socket))
+       (.end ^js net-socket))}))
 
-     :socket.api/connected?
-     (fn []
-       (not (.-pending ^js net-socket)))}))
-
-(defn connected? [{:keys [socket.api/connected?]}]
-  (and connected? (connected?)))
+(defn connected? [{:keys [socket]}]
+  (when socket
+    (not (.-pending socket))))
 
 (defn- ^{:cmd "talky.connect"} connect [*sys]
   (if (connected? (get @*sys :talky/socket-client))
@@ -156,7 +155,7 @@
                             (swap! *sys assoc :talky/socket-client socket-client))))))))))
 
 (defn ^{:cmd "talky.disconnect"} disconnect [*sys]
-  (let [{:socket.api/keys [end!] :as socket-client} (get @*sys :talky/socket-client)]
+  (let [{:keys [end!] :as socket-client} (get @*sys :talky/socket-client)]
     (if (connected? socket-client)
       (do
         (end!)
@@ -167,7 +166,7 @@
   (let [^js document  (.-document editor)
         ^js selection (.-selection editor)
 
-        {:socket.api/keys [write!] :as socket-client} (get @*sys :talky/socket-client)]
+        {:keys [write!] :as socket-client} (get @*sys :talky/socket-client)]
     (if (connected? socket-client)
       (write! (.getText document selection))
       (window/show-information-message "Talky is disconnected."))))
@@ -199,7 +198,7 @@
   nil)
 
 (defn deactivate []
-  (let [{:socket.api/keys [end!] :as socket-client} (get @*sys :talky/socket-client)]
+  (let [{:keys [end!] :as socket-client} (get @*sys :talky/socket-client)]
     (when (connected? socket-client)
       (end!))))
 
