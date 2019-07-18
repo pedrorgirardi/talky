@@ -36,7 +36,7 @@
   (-> (.-subscriptions context)
       (.push disposable)))
 
-(defn make-socket-client
+(defn connect!
   [{:socket/keys [host port config on-connect on-close on-data]
     :or {config
          {:socket/encoder
@@ -144,7 +144,7 @@
                                     (.show output-channel true)))
 
                                 socket-client
-                                (make-socket-client
+                                (connect!
                                  #:socket {:host host
                                            :port (js/parseInt port)
                                            :config config
