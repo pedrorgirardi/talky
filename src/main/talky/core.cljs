@@ -3,7 +3,7 @@
    ["vscode" :as vscode]
    ["net" :as net]
 
-   [talky.gui :as gui]
+   [talky.window :as window]
    [kitchen-async.promise :as p]))
 
 (defn- register-command [*sys cmd]
@@ -97,13 +97,13 @@
        (not (.-pending ^js net-socket)))}))
 
 (defn- ^{:cmd "talky.connect"} connect [*sys]
-  (.then (gui/show-input-box
+  (.then (window/show-input-box
           {:ignoreFocusOut true
            :prompt "Host"
            :value "localhost"})
          (fn [host]
            (when host
-             (.then (gui/show-input-box
+             (.then (window/show-input-box
                      {:ignoreFocusOut true
                       :prompt "Port"
                       :value (str 5555)})
@@ -122,12 +122,12 @@
 
                               on-connect
                               (fn [_]
-                                (gui/show-information-message
+                                (window/show-information-message
                                  (str "Talky is connected.")))
 
                               on-close
                               (fn [_ error?]
-                                (gui/show-information-message
+                                (window/show-information-message
                                  (if error?
                                    "Talky was disconnected due an error. Sorry."
                                    "Talky is disconnected.")))
