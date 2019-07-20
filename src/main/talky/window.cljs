@@ -6,6 +6,10 @@
   (-> (.-window ^js vscode)
       (.showInformationMessage message)))
 
+(defn show-error-message [message]
+  (-> (.-window ^js vscode)
+      (.showErrorMessage message)))      
+
 (defn show-quick-pick [items]
   (-> (.-window ^js vscode)
       (.showQuickPick (clj->js items))))

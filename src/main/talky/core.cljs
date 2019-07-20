@@ -81,21 +81,18 @@
                  (.setEncoding socket encoding)
                  socket)]
     {:socket socket
+     :connecting? true
+     :write! #(.write ^js socket (encoder %))
+     :end! #(.end ^js socket)}))
 
-     :write!
-     (fn write [data]
-       (.write ^js socket (encoder data)))
+(defn connecting? [sys]
+  (get-in sys [:talky/connection :connecting?]))
 
-     :end!
-     (fn []
-       (.end ^js socket))}))
-
-(defn connected? [^js socket]
-  (when socket
-    (not (.-pending socket))))
+(defn connected? [sys]
+  (get-in sys [:talky/connection :connected?]))
 
 (defn- ^{:cmd "talky.connect"} connect [*sys]
-  (if (connected? (get-in @*sys [:talky/connection :socket]))
+  (if (connected? @*sys)
     (window/show-information-message "Talky is connected.")
     (.then (window/show-input-box
             {:ignoreFocusOut true
@@ -122,17 +119,30 @@
 
                                 on-connect
                                 (fn []
+                                  (swap! *sys update :talky/connection merge {:connected? true
+                                                                              :connecting? false})
+
                                   (window/show-information-message
                                    "Talky is connected."))
 
                                 on-close
                                 (fn [error?]
-                                  (swap! *sys dissoc :talky/connection)
+                                  (if error?
+                                    (window/show-error-message
+                                     (cond
+                                       (connected? @*sys)
+                                       "Talky was disconnected due an error."
 
-                                  (window/show-information-message
-                                   (if error?
-                                     "Talky was disconnected due an error."
-                                     "Talky is disconnected.")))
+                                       (connecting? @*sys)
+                                       (str "Talky failed to connect. Is the REPL running on port " port "?")
+
+                                       :else
+                                       "Talky had a transmission error."))
+                                    (window/show-information-message
+                                     "Talky is disconnected."))
+
+                                  (swap! *sys update :talky/connection merge {:connected? false
+                                                                              :connecting? false}))
 
                                 on-data
                                 (fn [buffer]
@@ -152,16 +162,17 @@
                             (swap! *sys assoc :talky/connection connection))))))))))
 
 (defn ^{:cmd "talky.disconnect"} disconnect [*sys]
-  (let [{:keys [end! socket]} (get @*sys :talky/connection)]
-    (when (connected? socket)
-      (end!))))
+  (let [{:keys [end!]} (get @*sys :talky/connection)]
+    (if (connected? @*sys)
+      (end!)
+      (window/show-information-message "Talky is disconnected."))))
 
 (defn ^{:cmd "talky.sendSelectionToREPL"} send-selection-to-repl [*sys ^js editor ^js edit ^js args]
   (let [^js document (.-document editor)
         ^js selection (.-selection editor)
 
-        {:keys [write! socket]} (get @*sys :talky/connection)]
-    (if (connected? socket)
+        {:keys [write!]} (get @*sys :talky/connection)]
+    (if (connected? @*sys)
       (write! (.getText document selection))
       (window/show-information-message "Talky is disconnected."))))
 
@@ -192,7 +203,7 @@
   nil)
 
 (defn deactivate []
-  (let [{:keys [end! socket]} (get @*sys :talky/connection)]
-    (when (connected? socket)
+  (let [{:keys [end!]} (get @*sys :talky/connection)]
+    (when (connected? @*sys)
       (end!))))
 
