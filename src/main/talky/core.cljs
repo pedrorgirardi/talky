@@ -53,41 +53,38 @@
             buffer-or-string)}
 
          on-connect
-         (fn [socket]
+         (fn []
            ;; Do stuff and returns nil.
            nil)
 
          on-close
-         (fn [socket error?]
+         (fn [error?]
            ;; Do stuff and returns nil.
            nil)
 
          on-data
-         (fn [socket buffer-or-string]
+         (fn [buffer-or-string]
            ;; Do stuff and returns nil.
            nil)}
     :as this}]
-  (let [socket (doto (net/connect #js {:host host :port port})
-                     (.once "connect"
-                            (fn []
-                              (on-connect this)))
-                     (.once "close"
-                            (fn [error?]
-                              (on-close this error?)))
-                     (.on "data"
-                          (fn [buffer]
-                            (let [{:keys [decoder]} config]
-                              (on-data this (decoder buffer))))))
+  (let [{:keys [encoding encoder decoder]} config
 
-        socket (if-let [encoding (:encoding config)]
+        socket (doto (net/connect #js {:host host :port port})
+                 (.once "connect" (fn []
+                                    (on-connect)))
+                 (.once "close" (fn [error?]
+                                  (on-close error?)))
+                 (.on "data" (fn [buffer]
+                               (on-data (decoder buffer)))))
+
+        socket (if encoding
                  (.setEncoding socket encoding)
                  socket)]
     {:socket socket
 
      :write!
      (fn write [data]
-       (let [{:keys [encoder]} config]
-         (.write ^js socket (encoder data))))
+       (.write ^js socket (encoder data)))
 
      :end!
      (fn []
@@ -124,19 +121,21 @@
                                    (str data "\n"))}
 
                                 on-connect
-                                (fn [_]
+                                (fn []
                                   (window/show-information-message
                                    "Talky is connected."))
 
                                 on-close
-                                (fn [_ error?]
+                                (fn [error?]
+                                  (swap! *sys dissoc :talky/connection)
+
                                   (window/show-information-message
                                    (if error?
-                                     "Talky was disconnected due an error. Sorry."
+                                     "Talky was disconnected due an error."
                                      "Talky is disconnected.")))
 
                                 on-data
-                                (fn [_ buffer]
+                                (fn [buffer]
                                   (let [^js output-channel (get @*sys :talky/output-channel)]
                                     (.appendLine output-channel buffer)
 
@@ -153,12 +152,9 @@
                             (swap! *sys assoc :talky/connection connection))))))))))
 
 (defn ^{:cmd "talky.disconnect"} disconnect [*sys]
-  (let [{:keys [end!] :as socket-client} (get @*sys :talky/connection)]
-    (if (connected? socket-client)
-      (do
-        (end!)
-        (swap! *sys dissoc :talky/connection))
-      (window/show-information-message "Talky is disconnected."))))
+  (let [{:keys [end!] :as connection} (get @*sys :talky/connection)]
+    (when (connected? connection)
+      (end!))))
 
 (defn ^{:cmd "talky.sendSelectionToREPL"} send-selection-to-repl [*sys ^js editor ^js edit ^js args]
   (let [^js document (.-document editor)
