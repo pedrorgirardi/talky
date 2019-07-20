@@ -90,12 +90,12 @@
      (fn []
        (.end ^js socket))}))
 
-(defn connected? [{:keys [socket] :as connection}]
+(defn connected? [^js socket]
   (when socket
     (not (.-pending socket))))
 
 (defn- ^{:cmd "talky.connect"} connect [*sys]
-  (if (connected? (get @*sys :talky/connection))
+  (if (connected? (get-in @*sys [:talky/connection :socket]))
     (window/show-information-message "Talky is connected.")
     (.then (window/show-input-box
             {:ignoreFocusOut true
@@ -152,16 +152,16 @@
                             (swap! *sys assoc :talky/connection connection))))))))))
 
 (defn ^{:cmd "talky.disconnect"} disconnect [*sys]
-  (let [{:keys [end!] :as connection} (get @*sys :talky/connection)]
-    (when (connected? connection)
+  (let [{:keys [end! socket]} (get @*sys :talky/connection)]
+    (when (connected? socket)
       (end!))))
 
 (defn ^{:cmd "talky.sendSelectionToREPL"} send-selection-to-repl [*sys ^js editor ^js edit ^js args]
   (let [^js document (.-document editor)
         ^js selection (.-selection editor)
 
-        {:keys [write!] :as connection} (get @*sys :talky/connection)]
-    (if (connected? connection)
+        {:keys [write! socket]} (get @*sys :talky/connection)]
+    (if (connected? socket)
       (write! (.getText document selection))
       (window/show-information-message "Talky is disconnected."))))
 
@@ -192,7 +192,7 @@
   nil)
 
 (defn deactivate []
-  (let [{:keys [end!] :as connection} (get @*sys :talky/connection)]
-    (when (connected? connection)
+  (let [{:keys [end! socket]} (get @*sys :talky/connection)]
+    (when (connected? socket)
       (end!))))
 
