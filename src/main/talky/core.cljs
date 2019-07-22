@@ -174,7 +174,7 @@
         {:keys [write!]} (get @*sys :talky/connection)]
     (if (connected? @*sys)
       (write! (.getText document selection))
-      (window/show-information-message "Talky is disconnected."))))
+      (window/show-information-message "Talky is disconnected and can't send selection to REPL."))))
 
 (def *sys
   (atom {}))
