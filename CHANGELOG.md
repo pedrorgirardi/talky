@@ -1,5 +1,8 @@
 # Change Log
 
+## 0.5.0
+* Changed 'Send Selection to REPL' feedback message.
+
 ## 0.4.0
 * Removed commands;
 * Many bug fixes.
