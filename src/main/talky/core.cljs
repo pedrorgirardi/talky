@@ -167,11 +167,24 @@
       (end!)
       (window/show-information-message "Talky is disconnected."))))
 
+(def decoration
+  (let [type {:rangeBehavior (-> vscode
+                                 (.-DecorationRangeBehavior)
+                                 (.-ClosedOpen))
+              :after {:textDecoration "none"
+                      :fontWeight "normal"}}]
+    (->  (.-window vscode)
+         (.createTextEditorDecorationType (clj->js type)))))
+
 (defn ^{:cmd "talky.sendSelectionToREPL"} send-selection-to-repl [*sys ^js editor ^js edit ^js args]
   (let [^js document (.-document editor)
         ^js selection (.-selection editor)
 
         {:keys [write!]} (get @*sys :talky/connection)]
+
+    (.setDecorations editor decoration (clj->js [{:range selection
+                                                  :renderOptions {:after {:contentText "Clojure"}}}]))
+
     (if (connected? @*sys)
       (write! (.getText document selection))
       (window/show-information-message "Talky is disconnected and can't send selection to REPL."))))
