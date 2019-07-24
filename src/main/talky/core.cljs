@@ -180,8 +180,11 @@
   (atom {}))
 
 
-;; How to start a Clojure socket-based REPL
+;; Start a Clojure socket-based REPL
+;; -- REPL
 ;; clj -J-Dclojure.server.repl="{:port 5555 :accept clojure.core.server/repl}"
+;; -- pREPL
+;; clj -J-Dclojure.server.repl="{:port 5555 :accept clojure.core.server/io-prepl}"
 
 (defn activate [^js context]
   (let [^js output-channel (-> (.-window ^js vscode)
