@@ -171,7 +171,8 @@
   (let [type {:rangeBehavior (-> vscode
                                  (.-DecorationRangeBehavior)
                                  (.-ClosedOpen))
-              :after {:textDecoration "none"
+              :after {:margin "0 0 0 8px"
+                      :textDecoration "none"
                       :fontWeight "normal"}}]
     (->  (.-window vscode)
          (.createTextEditorDecorationType (clj->js type)))))
@@ -183,7 +184,10 @@
         {:keys [write!]} (get @*sys :talky/connection)]
 
     (.setDecorations editor decoration (clj->js [{:range selection
-                                                  :renderOptions {:after {:contentText "Clojure"}}}]))
+                                                  :renderOptions
+                                                  {:after
+                                                   {:contentText (str {:a 1
+                                                                       :b 2})}}}]))
 
     (if (connected? @*sys)
       (write! (.getText document selection))
