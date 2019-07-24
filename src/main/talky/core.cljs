@@ -35,6 +35,16 @@
   (-> (.-subscriptions context)
       (.push disposable)))
 
+(def decoration
+  (let [type {:rangeBehavior (-> vscode
+                                 (.-DecorationRangeBehavior)
+                                 (.-ClosedOpen))
+              :after {:margin "0 0 0 8px"
+                      :textDecoration "none"
+                      :fontWeight "normal"}}]
+    (->  (.-window vscode)
+         (.createTextEditorDecorationType (clj->js type)))))
+
 (defn connect!
   [{:keys [host port config on-connect on-close on-data]
     :or {config
@@ -115,7 +125,7 @@
 
                                  :encoder
                                  (fn [data]
-                                   (str data "\n"))}
+                                   (str "(do " data ")" "\n"))}
 
                                 on-connect
                                 (fn []
@@ -146,10 +156,17 @@
 
                                 on-data
                                 (fn [buffer]
-                                  (let [^js output-channel (get @*sys :talky/output-channel)]
-                                    (.appendLine output-channel buffer)
+                                  (let [^js output-channel (get @*sys :talky/output-channel)
 
-                                    (.show output-channel true)))
+                                        {:keys [editor selection]} (get @*sys :talky/eval)]
+
+                                    (.appendLine output-channel buffer)
+                                    (.show output-channel true)
+
+                                    (.setDecorations editor decoration (clj->js [{:range selection
+                                                                                  :renderOptions
+                                                                                  {:after
+                                                                                   {:contentText buffer}}}]))))
 
                                 connection
                                 (connect! {:host host
@@ -167,30 +184,17 @@
       (end!)
       (window/show-information-message "Talky is disconnected."))))
 
-(def decoration
-  (let [type {:rangeBehavior (-> vscode
-                                 (.-DecorationRangeBehavior)
-                                 (.-ClosedOpen))
-              :after {:margin "0 0 0 8px"
-                      :textDecoration "none"
-                      :fontWeight "normal"}}]
-    (->  (.-window vscode)
-         (.createTextEditorDecorationType (clj->js type)))))
-
 (defn ^{:cmd "talky.sendSelectionToREPL"} send-selection-to-repl [*sys ^js editor ^js edit ^js args]
   (let [^js document (.-document editor)
         ^js selection (.-selection editor)
 
         {:keys [write!]} (get @*sys :talky/connection)]
-
-    (.setDecorations editor decoration (clj->js [{:range selection
-                                                  :renderOptions
-                                                  {:after
-                                                   {:contentText (str {:a 1
-                                                                       :b 2})}}}]))
-
     (if (connected? @*sys)
-      (write! (.getText document selection))
+      (do
+        (swap! *sys assoc :talky/eval {:editor editor
+                                       :selection selection})
+
+        (write! (.getText document selection)))
       (window/show-information-message "Talky is disconnected and can't send selection to REPL."))))
 
 (def *sys
