@@ -50,7 +50,7 @@
   (str "(do " data ")" "\n"))
 
 (defn- prepl-decoder [data]
-  (reader/read-string data))
+  (reader/read-string (str "[" data "]")))
 
 (defn connect!
   [{:keys [host port config on-connect on-close on-data]
@@ -156,23 +156,21 @@
                                                                               :connecting? false}))
 
                                 on-data
-                                (fn [{:keys [tag val] :as m}]
+                                (fn [coll]
                                   (let [^js output-channel (get @*sys :talky/output-channel)
 
                                         {:keys [editor selection]} (get @*sys :talky/eval)]
 
-                                    ; (.appendLine output-channel m)
-                                    ; (.show output-channel true)
+                                    (doseq [{:keys [tag val] :as m} coll]
+                                      (cond
+                                        (= :ret tag)
+                                        (.setDecorations ^js editor decoration (clj->js [{:range selection
+                                                                                          :renderOptions
+                                                                                          {:after
+                                                                                           {:contentText val}}}]))
 
-                                    (cond
-                                      (= :ret tag)
-                                      (.setDecorations ^js editor decoration (clj->js [{:range selection
-                                                                                        :renderOptions
-                                                                                        {:after
-                                                                                         {:contentText val}}}]))
-
-                                      :else
-                                      (.appendLine output-channel val))))
+                                        :else
+                                        (.appendLine output-channel val)))))
 
                                 connection
                                 (connect! {:host host
