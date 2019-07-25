@@ -172,9 +172,7 @@
                                                                                          {:contentText val}}}]))
 
                                       :else
-                                      (do
-                                        (.appendLine output-channel val)
-                                        (.show output-channel true)))))
+                                      (.appendLine output-channel val))))
 
                                 connection
                                 (connect! {:host host
