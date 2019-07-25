@@ -216,21 +216,16 @@
 ;; clj -J-Dclojure.server.repl="{:port 5555 :accept clojure.core.server/io-prepl}"
 
 (defn activate [^js context]
-  (let [^js output-channel (-> (.-window ^js vscode)
-                               (.createOutputChannel "Talky"))]
+  (->> (register-command *sys #'connect)
+       (register-disposable context))
 
-    (->> (register-command *sys #'connect)
-         (register-disposable context))
+  (->> (register-command *sys #'disconnect)
+       (register-disposable context))
 
-    (->> (register-command *sys #'disconnect)
-         (register-disposable context))
+  (->> (register-text-editor-command *sys #'send-selection-to-repl)
+       (register-disposable context))
 
-    (->> (register-text-editor-command *sys #'send-selection-to-repl)
-         (register-disposable context))
-
-    (reset! *sys {:talky/output-channel output-channel})
-
-    (.appendLine output-channel "Talky is active.\n"))
+  (reset! *sys {:talky/output-channel (.createOutputChannel (.-window ^js vscode) "Talky")})
 
   nil)
 
