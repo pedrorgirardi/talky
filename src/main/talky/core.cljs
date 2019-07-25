@@ -1,5 +1,6 @@
 (ns talky.core
   (:require
+   [cljs.reader :as reader]
    ["vscode" :as vscode]
    ["net" :as net]
 
@@ -156,17 +157,20 @@
 
                                 on-data
                                 (fn [buffer]
-                                  (let [^js output-channel (get @*sys :talky/output-channel)
+                                  (let [{:keys [tag val]} (reader/read-string buffer)
+
+                                        ^js output-channel (get @*sys :talky/output-channel)
 
                                         {:keys [editor selection]} (get @*sys :talky/eval)]
 
                                     (.appendLine output-channel buffer)
                                     (.show output-channel true)
 
-                                    (.setDecorations editor decoration (clj->js [{:range selection
-                                                                                  :renderOptions
-                                                                                  {:after
-                                                                                   {:contentText buffer}}}]))))
+                                    (when (= :ret tag)
+                                      (.setDecorations editor decoration (clj->js [{:range selection
+                                                                                    :renderOptions
+                                                                                    {:after
+                                                                                     {:contentText val}}}])))))
 
                                 connection
                                 (connect! {:host host
