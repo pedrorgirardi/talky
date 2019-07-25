@@ -46,6 +46,12 @@
     (->  (.-window vscode)
          (.createTextEditorDecorationType (clj->js type)))))
 
+(defn- prepl-encoder [data]
+  (str "(do " data ")" "\n"))
+
+(defn- prepl-decoder [data]
+  (reader/read-string data))
+
 (defn connect!
   [{:keys [host port config on-connect on-close on-data]
     :or {config
@@ -119,14 +125,8 @@
                         (when port
                           (let [config
                                 {:encoding "utf8"
-
-                                 :decoder
-                                 (fn [data]
-                                   data)
-
-                                 :encoder
-                                 (fn [data]
-                                   (str "(do " data ")" "\n"))}
+                                 :decoder prepl-decoder
+                                 :encoder prepl-encoder}
 
                                 on-connect
                                 (fn []
@@ -156,21 +156,25 @@
                                                                               :connecting? false}))
 
                                 on-data
-                                (fn [buffer]
-                                  (let [{:keys [tag val]} (reader/read-string buffer)
-
-                                        ^js output-channel (get @*sys :talky/output-channel)
+                                (fn [{:keys [tag val] :as m}]
+                                  (let [^js output-channel (get @*sys :talky/output-channel)
 
                                         {:keys [editor selection]} (get @*sys :talky/eval)]
 
-                                    (.appendLine output-channel buffer)
-                                    (.show output-channel true)
+                                    ; (.appendLine output-channel m)
+                                    ; (.show output-channel true)
 
-                                    (when (= :ret tag)
+                                    (cond
+                                      (= :ret tag)
                                       (.setDecorations editor decoration (clj->js [{:range selection
                                                                                     :renderOptions
                                                                                     {:after
-                                                                                     {:contentText val}}}])))))
+                                                                                     {:contentText val}}}]))
+
+                                      :else
+                                      (do
+                                        (.appendLine output-channel val)
+                                        (.show output-channel true)))))
 
                                 connection
                                 (connect! {:host host
