@@ -166,10 +166,10 @@
 
                                     (cond
                                       (= :ret tag)
-                                      (.setDecorations editor decoration (clj->js [{:range selection
-                                                                                    :renderOptions
-                                                                                    {:after
-                                                                                     {:contentText val}}}]))
+                                      (.setDecorations ^js editor decoration (clj->js [{:range selection
+                                                                                        :renderOptions
+                                                                                        {:after
+                                                                                         {:contentText val}}}]))
 
                                       :else
                                       (do
