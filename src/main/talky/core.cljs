@@ -52,6 +52,20 @@
 (defn- prepl-decoder [data]
   (reader/read-string (str "[" data "]")))
 
+(defn- prepl-interpreter [*sys decoded]
+  (let [^js output-channel (get @*sys :talky/output-channel)
+
+        {:keys [editor selection]} (get @*sys :talky/eval)]
+    (doseq [{:keys [tag val] :as m} decoded]
+      (cond
+        (= :ret tag)
+        (let [render {:range selection
+                      :renderOptions {:after {:contentText val}}}]
+          (.setDecorations ^js editor decoration (clj->js [render])))
+
+        :else
+        (.appendLine output-channel val)))))
+
 (defn connect!
   [{:keys [host port config on-connect on-close on-data]
     :or {config
@@ -156,21 +170,8 @@
                                                                               :connecting? false}))
 
                                 on-data
-                                (fn [coll]
-                                  (let [^js output-channel (get @*sys :talky/output-channel)
-
-                                        {:keys [editor selection]} (get @*sys :talky/eval)]
-
-                                    (doseq [{:keys [tag val] :as m} coll]
-                                      (cond
-                                        (= :ret tag)
-                                        (.setDecorations ^js editor decoration (clj->js [{:range selection
-                                                                                          :renderOptions
-                                                                                          {:after
-                                                                                           {:contentText val}}}]))
-
-                                        :else
-                                        (.appendLine output-channel val)))))
+                                (fn [decoded]
+                                  (prepl-interpreter *sys decoded))
 
                                 connection
                                 (connect! {:host host
