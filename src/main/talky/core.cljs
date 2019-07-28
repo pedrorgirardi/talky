@@ -52,10 +52,8 @@
 (def decoration
   (let [type {:rangeBehavior (-> vscode
                                  (.-DecorationRangeBehavior)
-                                 (.-ClosedOpen))
-              :after {:margin "0 0 0 8px"
-                      :textDecoration "none"
-                      :fontWeight "normal"}}]
+                                 (.-ClosedClosed))
+              :after {:margin "0 0 0 8px"}}]
     (.createTextEditorDecorationType -window (clj->js type))))
 
 (defn- prepl-interpreter [*sys decoded]
