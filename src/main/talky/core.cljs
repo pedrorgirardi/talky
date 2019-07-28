@@ -56,8 +56,7 @@
               :after {:margin "0 0 0 8px"
                       :textDecoration "none"
                       :fontWeight "normal"}}]
-    (->  (.-window vscode)
-         (.createTextEditorDecorationType (clj->js type)))))
+    (.createTextEditorDecorationType -window (clj->js type))))
 
 (defn- prepl-interpreter [*sys decoded]
   (let [^js output-channel (get @*sys :talky/output-channel)
@@ -229,7 +228,7 @@
   (->> (register-text-editor-command *sys #'send-selection-to-repl)
        (register-disposable context))
 
-  (reset! *sys {:talky/output-channel (.createOutputChannel (.-window ^js vscode) "Talky")})
+  (reset! *sys {:talky/output-channel (.createOutputChannel -window "Talky")})
 
   nil)
 
