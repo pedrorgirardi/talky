@@ -50,7 +50,8 @@
       (.push disposable)))
 
 (def decoration
-  (let [type {:rangeBehavior (-> vscode
+  (let [type {:isWholeLine true
+              :rangeBehavior (-> vscode
                                  (.-DecorationRangeBehavior)
                                  (.-ClosedClosed))
               :after {:margin "0 0 0 8px"}}]
