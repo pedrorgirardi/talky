@@ -46,12 +46,6 @@
     (->  (.-window vscode)
          (.createTextEditorDecorationType (clj->js type)))))
 
-(defn- prepl-encoder [data]
-  (str "(do " data ")" "\n"))
-
-(defn- prepl-decoder [data]
-  (reader/read-string (str "[" data "]")))
-
 (defn- prepl-interpreter [*sys decoded]
   (let [^js output-channel (get @*sys :talky/output-channel)
 
@@ -139,8 +133,8 @@
                         (when port
                           (let [config
                                 {:encoding "utf8"
-                                 :decoder prepl-decoder
-                                 :encoder prepl-encoder}
+                                 :encoder #(str "(do " % ")\n")
+                                 :decoder #(reader/read-string (str "[" % "]"))}
 
                                 on-connect
                                 (fn []
