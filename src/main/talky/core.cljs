@@ -2,9 +2,22 @@
   (:require
    [cljs.reader :as reader]
    ["vscode" :as vscode]
-   ["net" :as net]
+   ["net" :as net]))
 
-   [talky.window :as window]))
+(def -window
+  (.-window ^js vscode))
+
+(defn show-information-message [message]
+  (.showInformationMessage -window message))
+
+(defn show-error-message [message]
+  (.showErrorMessage -window message))
+
+(defn show-quick-pick [items]
+  (.showQuickPick -window (clj->js items)))
+
+(defn show-input-box [& [options]]
+  (.showInputBox -window (clj->js options)))
 
 (defn- register-command [*sys cmd]
   (let [cmd-name (-> cmd meta :cmd)
@@ -118,14 +131,14 @@
 
 (defn- ^{:cmd "talky.connect"} connect [*sys]
   (if (connected? @*sys)
-    (window/show-information-message "Talky is connected.")
-    (.then (window/show-input-box
+    (show-information-message "Talky is connected.")
+    (.then (show-input-box
             {:ignoreFocusOut true
              :prompt "Host"
              :value "localhost"})
            (fn [host]
              (when host
-               (.then (window/show-input-box
+               (.then (show-input-box
                        {:ignoreFocusOut true
                         :prompt "Port"
                         :value (str 5555)})
@@ -141,13 +154,13 @@
                                   (swap! *sys update :talky/connection merge {:connected? true
                                                                               :connecting? false})
 
-                                  (window/show-information-message
+                                  (show-information-message
                                    "Talky is connected."))
 
                                 on-close
                                 (fn [error?]
                                   (if error?
-                                    (window/show-error-message
+                                    (show-error-message
                                      (cond
                                        (connected? @*sys)
                                        "Talky was disconnected due an error."
@@ -157,7 +170,7 @@
 
                                        :else
                                        "Talky had a transmission error."))
-                                    (window/show-information-message
+                                    (show-information-message
                                      "Talky is disconnected."))
 
                                   (swap! *sys update :talky/connection merge {:connected? false
@@ -181,7 +194,7 @@
   (let [{:keys [end!]} (get @*sys :talky/connection)]
     (if (connected? @*sys)
       (end!)
-      (window/show-information-message "Talky is disconnected."))))
+      (show-information-message "Talky is disconnected."))))
 
 (defn ^{:cmd "talky.sendSelectionToREPL"} send-selection-to-repl [*sys ^js editor ^js edit ^js args]
   (let [^js document (.-document editor)
@@ -194,7 +207,7 @@
                                        :selection selection})
 
         (write! (.getText document selection)))
-      (window/show-information-message "Talky is disconnected and can't send selection to REPL."))))
+      (show-information-message "Talky is disconnected and can't send selection to REPL."))))
 
 (def *sys
   (atom {}))
