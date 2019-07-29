@@ -177,14 +177,14 @@
                                                                            .-path))]
                                     (run!
                                      (fn [{:keys [tag val] :as m}]
-                                       (cond
-                                         (and (= :ret tag) decorate?)
-                                         (let [render {:range selection
-                                                       :renderOptions {:after {:contentText val}}}]
-                                           (.setDecorations active-editor (decoration) (clj->js [render])))
 
-                                         :else
-                                         (.appendLine output-channel val)))
+                                       (.appendLine output-channel val)
+
+                                      ;  (when (and (= :ret tag) decorate?)
+                                      ;    (let [render {:range selection
+                                      ;                  :renderOptions {:after {:contentText val}}}]
+                                      ;      (.setDecorations active-editor (decoration) (clj->js [render]))))
+                                       )
                                      decoded)))
 
                                 connection
@@ -204,8 +204,10 @@
       (show-information-message "Talky is disconnected."))))
 
 (defn ^{:cmd "talky.sendSelectionToREPL"} send-selection-to-repl [*sys ^js editor ^js edit ^js args]
-  (let [^js document (.-document editor)
+  (let [^js output-channel (get @*sys :talky/output-channel)
+        ^js document (.-document editor)
         ^js selection (.-selection editor)
+        text (.getText document selection)
 
         {:keys [write!]} (get @*sys :talky/connection)]
     (if (connected? @*sys)
@@ -213,7 +215,9 @@
         (swap! *sys assoc :talky/eval {:document-path (-> document .-uri .-path)
                                        :selection selection})
 
-        (write! (.getText document selection)))
+        (.appendLine output-channel (str "\n" text "\n"))
+
+        (write! text))
       (show-information-message "Talky is disconnected and can't send selection to REPL."))))
 
 (def *sys
