@@ -49,7 +49,7 @@
   (-> (.-subscriptions context)
       (.push disposable)))
 
-(def decoration
+(defn decoration []
   (let [type {:isWholeLine true
               :rangeBehavior (-> vscode
                                  (.-DecorationRangeBehavior)
@@ -180,7 +180,7 @@
                                          (and (= :ret tag) decorate?)
                                          (let [render {:range selection
                                                        :renderOptions {:after {:contentText val}}}]
-                                           (.setDecorations active-editor decoration (clj->js [render])))
+                                           (.setDecorations active-editor (decoration) (clj->js [render])))
 
                                          :else
                                          (.appendLine output-channel val)))
