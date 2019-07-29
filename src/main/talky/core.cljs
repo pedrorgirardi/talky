@@ -1,6 +1,7 @@
 (ns talky.core
   (:require
    [cljs.reader :as reader]
+   [cljs.pprint :as pprint]
    ["vscode" :as vscode]
    ["net" :as net]))
 
@@ -178,13 +179,15 @@
                                     (run!
                                      (fn [{:keys [tag val] :as m}]
 
-                                       (.appendLine output-channel val)
-
                                       ;  (when (and (= :ret tag) decorate?)
                                       ;    (let [render {:range selection
                                       ;                  :renderOptions {:after {:contentText val}}}]
                                       ;      (.setDecorations active-editor (decoration) (clj->js [render]))))
-                                       )
+
+                                       (.appendLine output-channel (try
+                                                                     (with-out-str (pprint/pprint (reader/read-string val)))
+                                                                     (catch js/Error _
+                                                                       val))))
                                      decoded)))
 
                                 connection
