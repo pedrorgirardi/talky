@@ -60,16 +60,27 @@
 (defn- prepl-interpreter [*sys decoded]
   (let [^js output-channel (get @*sys :talky/output-channel)
 
-        {:keys [editor selection]} (get @*sys :talky/eval)]
-    (doseq [{:keys [tag val] :as m} decoded]
-      (cond
-        (= :ret tag)
-        (let [render {:range selection
-                      :renderOptions {:after {:contentText val}}}]
-          (.setDecorations ^js editor decoration (clj->js [render])))
+        {:keys [document-path selection]} (get @*sys :talky/eval)
 
-        :else
-        (.appendLine output-channel val)))))
+        ^js active-editor (.-activeTextEditor -window)
+
+        ;; Not likely, but the programmer can switch editor in-between evaluation.
+        ;; If that happens, Talky shouldn't display the decoration.
+        decorate? (= document-path (some-> active-editor
+                                           .-document
+                                           .-uri
+                                           .-path))]
+    (run!
+     (fn [{:keys [tag val] :as m}]
+       (cond
+         (and (= :ret tag) decorate?)
+         (let [render {:range selection
+                       :renderOptions {:after {:contentText val}}}]
+           (.setDecorations active-editor decoration (clj->js [render])))
+
+         :else
+         (.appendLine output-channel val)))
+     decoded)))
 
 (defn connect!
   [{:keys [host port config on-connect on-close on-data]
@@ -201,7 +212,7 @@
         {:keys [write!]} (get @*sys :talky/connection)]
     (if (connected? @*sys)
       (do
-        (swap! *sys assoc :talky/eval {:editor editor
+        (swap! *sys assoc :talky/eval {:document-path (-> document .-uri .-path)
                                        :selection selection})
 
         (write! (.getText document selection)))
