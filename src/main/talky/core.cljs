@@ -57,31 +57,6 @@
               :after {:margin "0 0 0 8px"}}]
     (.createTextEditorDecorationType -window (clj->js type))))
 
-(defn- prepl-interpreter [*sys decoded]
-  (let [^js output-channel (get @*sys :talky/output-channel)
-
-        {:keys [document-path selection]} (get @*sys :talky/eval)
-
-        ^js active-editor (.-activeTextEditor -window)
-
-        ;; Not likely, but the programmer can switch editor in-between evaluation.
-        ;; If that happens, Talky shouldn't display the decoration.
-        decorate? (= document-path (some-> active-editor
-                                           .-document
-                                           .-uri
-                                           .-path))]
-    (run!
-     (fn [{:keys [tag val] :as m}]
-       (cond
-         (and (= :ret tag) decorate?)
-         (let [render {:range selection
-                       :renderOptions {:after {:contentText val}}}]
-           (.setDecorations active-editor decoration (clj->js [render])))
-
-         :else
-         (.appendLine output-channel val)))
-     decoded)))
-
 (defn connect!
   [{:keys [host port config on-connect on-close on-data]
     :or {config
@@ -187,7 +162,29 @@
 
                                 on-data
                                 (fn [decoded]
-                                  (prepl-interpreter *sys decoded))
+                                  (let [^js output-channel (get @*sys :talky/output-channel)
+
+                                        {:keys [document-path selection]} (get @*sys :talky/eval)
+
+                                        ^js active-editor (.-activeTextEditor -window)
+
+                                        ;; Not likely, but the programmer can switch editor in-between evaluation.
+                                        ;; If that happens, Talky shouldn't display the decoration.
+                                        decorate? (= document-path (some-> active-editor
+                                                                           .-document
+                                                                           .-uri
+                                                                           .-path))]
+                                    (run!
+                                     (fn [{:keys [tag val] :as m}]
+                                       (cond
+                                         (and (= :ret tag) decorate?)
+                                         (let [render {:range selection
+                                                       :renderOptions {:after {:contentText val}}}]
+                                           (.setDecorations active-editor decoration (clj->js [render])))
+
+                                         :else
+                                         (.appendLine output-channel val)))
+                                     decoded)))
 
                                 connection
                                 (connect! {:host host
