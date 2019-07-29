@@ -215,6 +215,7 @@
         (swap! *sys assoc :talky/eval {:document-path (-> document .-uri .-path)
                                        :selection selection})
 
+        (.show output-channel true)
         (.appendLine output-channel (str "\n" text "\n"))
 
         (write! text))
