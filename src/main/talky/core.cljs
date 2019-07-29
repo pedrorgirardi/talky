@@ -184,10 +184,13 @@
                                       ;                  :renderOptions {:after {:contentText val}}}]
                                       ;      (.setDecorations active-editor (decoration) (clj->js [render]))))
 
-                                       (.appendLine output-channel (try
-                                                                     (with-out-str (pprint/pprint (reader/read-string val)))
-                                                                     (catch js/Error _
-                                                                       val))))
+
+                                       (.appendLine output-channel (if (= :ret tag)
+                                                                     (try
+                                                                       (with-out-str (pprint/pprint (reader/read-string val)))
+                                                                       (catch js/Error _
+                                                                         val))
+                                                                     val)))
                                      decoded)))
 
                                 connection
