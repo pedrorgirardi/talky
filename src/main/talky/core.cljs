@@ -54,7 +54,8 @@
               :rangeBehavior (-> vscode
                                  (.-DecorationRangeBehavior)
                                  (.-ClosedClosed))
-              :after {:margin "0 0 0 8px"}}]
+              :after {:border "solid"
+                      :margin "0 0 0 8px"}}]
     (.createTextEditorDecorationType -window (clj->js type))))
 
 (defn connect!
