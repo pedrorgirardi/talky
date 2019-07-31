@@ -132,7 +132,7 @@
                         (when port
                           (let [config
                                 {:encoding "utf8"
-                                 :encoder #(str "(do " % ")\n")
+                                 :encoder #(str % "\n")
                                  :decoder #(reader/read-string (str "[" % "]"))}
 
                                 on-connect
@@ -177,7 +177,7 @@
                                                                            .-uri
                                                                            .-path))]
                                     (run!
-                                     (fn [{:keys [tag val] :as m}]
+                                     (fn [{:keys [tag val form] :as m}]
 
                                       ;  (when (and (= :ret tag) decorate?)
                                       ;    (let [render {:range selection
@@ -186,10 +186,11 @@
 
 
                                        (.appendLine output-channel (if (= :ret tag)
-                                                                     (try
-                                                                       (with-out-str (pprint/pprint (reader/read-string val)))
-                                                                       (catch js/Error _
-                                                                         val))
+                                                                     (let [val (try
+                                                                                 (with-out-str (pprint/pprint (reader/read-string val)))
+                                                                                 (catch js/Error _
+                                                                                   val))]
+                                                                       (str form "\n=> " val "\n"))
                                                                      val)))
                                      decoded)))
 
@@ -222,7 +223,6 @@
                                        :selection selection})
 
         (.show output-channel true)
-        (.appendLine output-channel (str "\n" text "\n"))
 
         (write! text))
       (show-information-message "Talky is disconnected and can't send selection to REPL."))))
