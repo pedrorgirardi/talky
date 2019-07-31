@@ -1,7 +1,7 @@
 {:source-paths ["src/main"]
 
  :dependencies
- []
+ [[fipp "0.6.18"]]
 
  :builds
  {:extension

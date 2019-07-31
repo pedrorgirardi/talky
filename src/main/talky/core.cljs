@@ -1,7 +1,7 @@
 (ns talky.core
   (:require
    [cljs.reader :as reader]
-   [cljs.pprint :as pprint]
+   [fipp.edn :refer [pprint] :rename {pprint fipp}]
    ["vscode" :as vscode]
    ["net" :as net]))
 
@@ -187,10 +187,10 @@
 
                                        (.appendLine output-channel (if (= :ret tag)
                                                                      (let [val (try
-                                                                                 (with-out-str (pprint/pprint (reader/read-string val)))
+                                                                                 (with-out-str (fipp (reader/read-string val)))
                                                                                  (catch js/Error _
                                                                                    val))]
-                                                                       (str form "\n=> " val "\n"))
+                                                                       (str form "\n▼\n" val))
                                                                      val)))
                                      decoded)))
 
@@ -222,6 +222,7 @@
         (swap! *sys assoc :talky/eval {:document-path (-> document .-uri .-path)
                                        :selection selection})
 
+        (.appendLine output-channel "Transmitting...\n")
         (.show output-channel true)
 
         (write! text))
