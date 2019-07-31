@@ -164,27 +164,9 @@
 
                                 on-data
                                 (fn [decoded]
-                                  (let [^js output-channel (get @*sys :talky/output-channel)
-
-                                        {:keys [document-path selection]} (get @*sys :talky/eval)
-
-                                        ^js active-editor (.-activeTextEditor -window)
-
-                                        ;; Not likely, but the programmer can switch editor in-between evaluation.
-                                        ;; If that happens, Talky shouldn't display the decoration.
-                                        decorate? (= document-path (some-> active-editor
-                                                                           .-document
-                                                                           .-uri
-                                                                           .-path))]
+                                  (let [^js output-channel (get @*sys :talky/output-channel)]
                                     (run!
                                      (fn [{:keys [tag val form] :as m}]
-
-                                      ;  (when (and (= :ret tag) decorate?)
-                                      ;    (let [render {:range selection
-                                      ;                  :renderOptions {:after {:contentText val}}}]
-                                      ;      (.setDecorations active-editor (decoration) (clj->js [render]))))
-
-
                                        (.appendLine output-channel (if (= :ret tag)
                                                                      (let [val (try
                                                                                  (with-out-str (fipp (reader/read-string val)))
@@ -219,9 +201,6 @@
         {:keys [write!]} (get @*sys :talky/connection)]
     (if (connected? @*sys)
       (do
-        (swap! *sys assoc :talky/eval {:document-path (-> document .-uri .-path)
-                                       :selection selection})
-
         (.appendLine output-channel "Transmitting...\n")
         (.show output-channel true)
 
