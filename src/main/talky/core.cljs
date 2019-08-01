@@ -155,7 +155,7 @@
                                        "Talky was disconnected due an error."
 
                                        (connecting? @*sys)
-                                       (str "Talky failed to connect. Is the REPL running on port " port "?")
+                                       (str "Talky failed to connect to REPL on port " port ".")
 
                                        :else
                                        "Talky had a transmission error."))
@@ -222,7 +222,7 @@
         (.appendLine output-channel "Transmitting...\n")
 
         (write! text))
-      (show-warning-message "Talky is disconnected and can't send selection to REPL."))))
+      (show-warning-message "Talky is disconnected."))))
 
 (def *sys
   (atom {}))
