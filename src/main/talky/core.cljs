@@ -11,6 +11,9 @@
 (defn show-information-message [message & {:keys [modal?]}]
   (.showInformationMessage -window message #js {:modal modal?}))
 
+(defn show-warning-message [message]
+  (.showWarningMessage -window message))
+
 (defn show-error-message [message]
   (.showErrorMessage -window message))
 
@@ -219,7 +222,7 @@
         (.appendLine output-channel "Transmitting...\n")
 
         (write! text))
-      (show-information-message "Talky is disconnected and can't send selection to REPL."))))
+      (show-warning-message "Talky is disconnected and can't send selection to REPL."))))
 
 (def *sys
   (atom {}))
