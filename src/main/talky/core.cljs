@@ -8,8 +8,8 @@
 (def -window
   (.-window ^js vscode))
 
-(defn show-information-message [message]
-  (.showInformationMessage -window message))
+(defn show-information-message [message & {:keys [modal?]}]
+  (.showInformationMessage -window message #js {:modal modal?}))
 
 (defn show-error-message [message]
   (.showErrorMessage -window message))
@@ -133,7 +133,7 @@
                           (let [config
                                 {:encoding "utf8"
                                  :encoder #(str % "\n")
-                                 :decoder #(reader/read-string (str "[" % "]"))}
+                                 :decoder identity}
 
                                 on-connect
                                 (fn []
@@ -163,18 +163,33 @@
                                                                               :connecting? false}))
 
                                 on-data
-                                (fn [decoded]
-                                  (let [^js output-channel (get @*sys :talky/output-channel)]
-                                    (run!
-                                     (fn [{:keys [tag val form] :as m}]
-                                       (.appendLine output-channel (if (= :ret tag)
-                                                                     (let [val (try
-                                                                                 (with-out-str (fipp (reader/read-string val)))
-                                                                                 (catch js/Error _
-                                                                                   val))]
-                                                                       (str form "\n▼\n" val))
-                                                                     val)))
-                                     decoded)))
+                                (fn [data]
+                                  (let [^js output-channel (get @*sys :talky/output-channel)
+
+                                        parsed (try
+                                                 (reader/read-string (str "[" data "]"))
+                                                 (catch js/Error e
+                                                   (js/console.error "Failed to read-string." data)))]
+
+                                    (if (nil? parsed)
+                                      (.appendLine output-channel (str data "\n"))
+                                      (run!
+                                       (fn [x]
+                                         (cond
+                                           (and (map? x) (= :ret (:tag x)))
+                                           (do
+                                             (.appendLine output-channel (str (:form x) "\n▼\n" (:val x)))
+                                             (show-information-message (str (:form x) "\n\n" (:val x)) :modal? true))
+
+                                           (and (map? x) (= :out (:tag x)))
+                                           (.appendLine output-channel (str (:val x) "\n"))
+
+                                           (and (map? x) (= :err (:tag x)))
+                                           (.appendLine output-channel (str "☠\n" (:val x) "\n"))
+
+                                           :else
+                                           (.appendLine output-channel (str x "\n"))))
+                                       parsed))))
 
                                 connection
                                 (connect! {:host host
@@ -202,7 +217,6 @@
     (if (connected? @*sys)
       (do
         (.appendLine output-channel "Transmitting...\n")
-        (.show output-channel true)
 
         (write! text))
       (show-information-message "Talky is disconnected and can't send selection to REPL."))))
