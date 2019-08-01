@@ -177,15 +177,13 @@
                                        (fn [x]
                                          (cond
                                            (and (map? x) (= :ret (:tag x)))
-                                           (do
-                                             (.appendLine output-channel (str (:form x) "\n▼\n" (:val x)))
-                                             (show-information-message (str (:form x) "\n\n" (:val x)) :modal? true))
+                                           (.appendLine output-channel (str (:form x) "\n▼\n" (:val x) "\n"))
 
                                            (and (map? x) (= :out (:tag x)))
                                            (.appendLine output-channel (str (:val x) "\n"))
 
                                            (and (map? x) (= :err (:tag x)))
-                                           (.appendLine output-channel (str "☠\n" (:val x) "\n"))
+                                           (.appendLine output-channel (str (:val x) "\n"))
 
                                            :else
                                            (.appendLine output-channel (str x "\n"))))
