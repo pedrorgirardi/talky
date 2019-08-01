@@ -177,7 +177,9 @@
                                        (fn [x]
                                          (cond
                                            (and (map? x) (= :ret (:tag x)))
-                                           (.appendLine output-channel (str (:form x) "\n▼\n" (:val x) "\n"))
+                                           (do
+                                             (.appendLine output-channel (str (:form x) "\n▼\n" (:val x) "\n"))
+                                             (show-information-message (:val x)))
 
                                            (and (map? x) (= :out (:tag x)))
                                            (.appendLine output-channel (str (:val x) "\n"))
@@ -215,7 +217,6 @@
     (if (connected? @*sys)
       (do
         (.appendLine output-channel "Transmitting...\n")
-        (.show output-channel true)
 
         (write! text))
       (show-information-message "Talky is disconnected and can't send selection to REPL."))))
