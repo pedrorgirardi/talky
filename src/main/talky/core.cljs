@@ -215,6 +215,7 @@
     (if (connected? @*sys)
       (do
         (.appendLine output-channel "Transmitting...\n")
+        (.show output-channel true)
 
         (write! text))
       (show-information-message "Talky is disconnected and can't send selection to REPL."))))
