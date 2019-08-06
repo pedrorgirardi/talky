@@ -1,9 +1,27 @@
 (ns talky.core
   (:require
+   [cljs.reader :as reader]
+   [fipp.edn :refer [pprint] :rename {pprint fipp}]
    ["vscode" :as vscode]
-   ["net" :as net]
+   ["net" :as net]))
 
-   [talky.window :as window]))
+(def -window
+  (.-window ^js vscode))
+
+(defn show-information-message [message & {:keys [modal?]}]
+  (.showInformationMessage -window message #js {:modal modal?}))
+
+(defn show-warning-message [message]
+  (.showWarningMessage -window message))
+
+(defn show-error-message [message]
+  (.showErrorMessage -window message))
+
+(defn show-quick-pick [items]
+  (.showQuickPick -window (clj->js items)))
+
+(defn show-input-box [& [options]]
+  (.showInputBox -window (clj->js options)))
 
 (defn- register-command [*sys cmd]
   (let [cmd-name (-> cmd meta :cmd)
@@ -34,6 +52,15 @@
 (defn- register-disposable [^js context ^js disposable]
   (-> (.-subscriptions context)
       (.push disposable)))
+
+(defn decoration []
+  (let [type {:isWholeLine true
+              :rangeBehavior (-> vscode
+                                 (.-DecorationRangeBehavior)
+                                 (.-ClosedClosed))
+              :after {:border "solid"
+                      :margin "0 0 0 8px"}}]
+    (.createTextEditorDecorationType -window (clj->js type))))
 
 (defn connect!
   [{:keys [host port config on-connect on-close on-data]
@@ -93,14 +120,14 @@
 
 (defn- ^{:cmd "talky.connect"} connect [*sys]
   (if (connected? @*sys)
-    (window/show-information-message "Talky is connected.")
-    (.then (window/show-input-box
+    (show-information-message "Talky is connected.")
+    (.then (show-input-box
             {:ignoreFocusOut true
              :prompt "Host"
              :value "localhost"})
            (fn [host]
              (when host
-               (.then (window/show-input-box
+               (.then (show-input-box
                        {:ignoreFocusOut true
                         :prompt "Port"
                         :value (str 5555)})
@@ -108,48 +135,64 @@
                         (when port
                           (let [config
                                 {:encoding "utf8"
-
-                                 :decoder
-                                 (fn [data]
-                                   data)
-
-                                 :encoder
-                                 (fn [data]
-                                   (str data "\n"))}
+                                 :encoder #(str % "\n")
+                                 :decoder identity}
 
                                 on-connect
                                 (fn []
                                   (swap! *sys update :talky/connection merge {:connected? true
                                                                               :connecting? false})
 
-                                  (window/show-information-message
+                                  (show-information-message
                                    "Talky is connected."))
 
                                 on-close
                                 (fn [error?]
                                   (if error?
-                                    (window/show-error-message
+                                    (show-error-message
                                      (cond
                                        (connected? @*sys)
                                        "Talky was disconnected due an error."
 
                                        (connecting? @*sys)
-                                       (str "Talky failed to connect. Is the REPL running on port " port "?")
+                                       (str "Talky failed to connect to REPL on port " port ".")
 
                                        :else
                                        "Talky had a transmission error."))
-                                    (window/show-information-message
+                                    (show-information-message
                                      "Talky is disconnected."))
 
                                   (swap! *sys update :talky/connection merge {:connected? false
                                                                               :connecting? false}))
 
                                 on-data
-                                (fn [buffer]
-                                  (let [^js output-channel (get @*sys :talky/output-channel)]
-                                    (.appendLine output-channel buffer)
+                                (fn [data]
+                                  (let [^js output-channel (get @*sys :talky/output-channel)
 
-                                    (.show output-channel true)))
+                                        parsed (try
+                                                 (reader/read-string (str "[" data "]"))
+                                                 (catch js/Error e
+                                                   (js/console.error "Failed to read-string." data)))]
+
+                                    (if (nil? parsed)
+                                      (.appendLine output-channel (str data "\n"))
+                                      (run!
+                                       (fn [x]
+                                         (cond
+                                           (and (map? x) (= :ret (:tag x)))
+                                           (do
+                                             (.appendLine output-channel (str (:form x) "\n▼\n" (:val x) "\n"))
+                                             (show-information-message (:val x)))
+
+                                           (and (map? x) (= :out (:tag x)))
+                                           (.appendLine output-channel (str (:val x) "\n"))
+
+                                           (and (map? x) (= :err (:tag x)))
+                                           (.appendLine output-channel (str (:val x) "\n"))
+
+                                           :else
+                                           (.appendLine output-channel (str x "\n"))))
+                                       parsed))))
 
                                 connection
                                 (connect! {:host host
@@ -165,40 +208,43 @@
   (let [{:keys [end!]} (get @*sys :talky/connection)]
     (if (connected? @*sys)
       (end!)
-      (window/show-information-message "Talky is disconnected."))))
+      (show-information-message "Talky is disconnected."))))
 
 (defn ^{:cmd "talky.sendSelectionToREPL"} send-selection-to-repl [*sys ^js editor ^js edit ^js args]
-  (let [^js document (.-document editor)
+  (let [^js output-channel (get @*sys :talky/output-channel)
+        ^js document (.-document editor)
         ^js selection (.-selection editor)
+        text (.getText document selection)
 
         {:keys [write!]} (get @*sys :talky/connection)]
     (if (connected? @*sys)
-      (write! (.getText document selection))
-      (window/show-information-message "Talky is disconnected and can't send selection to REPL."))))
+      (do
+        (.appendLine output-channel "Transmitting...\n")
+
+        (write! text))
+      (show-warning-message "Talky is disconnected."))))
 
 (def *sys
   (atom {}))
 
 
-;; How to start a Clojure socket-based REPL
+;; Start a Clojure socket-based REPL
+;; -- REPL
 ;; clj -J-Dclojure.server.repl="{:port 5555 :accept clojure.core.server/repl}"
+;; -- pREPL
+;; clj -J-Dclojure.server.repl="{:port 5555 :accept clojure.core.server/io-prepl}"
 
 (defn activate [^js context]
-  (let [^js output-channel (-> (.-window ^js vscode)
-                               (.createOutputChannel "Talky"))]
+  (->> (register-command *sys #'connect)
+       (register-disposable context))
 
-    (->> (register-command *sys #'connect)
-         (register-disposable context))
+  (->> (register-command *sys #'disconnect)
+       (register-disposable context))
 
-    (->> (register-command *sys #'disconnect)
-         (register-disposable context))
+  (->> (register-text-editor-command *sys #'send-selection-to-repl)
+       (register-disposable context))
 
-    (->> (register-text-editor-command *sys #'send-selection-to-repl)
-         (register-disposable context))
-
-    (reset! *sys {:talky/output-channel output-channel})
-
-    (.appendLine output-channel "Talky is active.\n"))
+  (reset! *sys {:talky/output-channel (.createOutputChannel -window "Talky")})
 
   nil)
 
