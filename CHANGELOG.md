@@ -1,5 +1,8 @@
 # Change Log
 
+## 0.6.0
+* Better pREPL support
+
 ## 0.5.0
 * Changed 'Send Selection to REPL' feedback message.
 
