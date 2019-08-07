@@ -181,18 +181,23 @@
                                       (run!
                                        (fn [x]
                                          (cond
+                                           ;; -- RET
                                            (and (map? x) (= :ret (:tag x)))
                                            (do
                                              (.appendLine output-channel (str (:form x) "\n▼\n" (:val x) "\n"))
                                              (show-information-message (:val x)))
 
+                                           ;; -- ERR
                                            (and (map? x) (= :err (:tag x)))
                                            (do
                                              (.appendLine output-channel (str (:val x) "\n"))
                                              (show-error-message (:val x)))
 
+                                           ;; -- OUT
                                            (and (map? x) (= :out (:tag x)))
-                                           (.appendLine output-channel (str (:val x) "\n"))
+                                           (do
+                                             (.appendLine output-channel (str (:val x) "\n"))
+                                             (show-information-message (:val x)))
 
                                            :else
                                            (.appendLine output-channel (str x "\n"))))
