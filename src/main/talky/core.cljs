@@ -183,20 +183,14 @@
                                          (cond
                                            ;; -- RET
                                            (and (map? x) (= :ret (:tag x)))
-                                           (.appendLine output-channel (str "*ns*\n"
-                                                                            "----\n"
-                                                                            (:ns x)
-                                                                             "\n\n"
+                                           (.appendLine output-channel (str "-------------------------\n"
+                                                                            "*ns* " (:ns x) "\n\n"
 
-                                                                            "Form\n"
-                                                                            "----\n" 
                                                                             (:form x)
-                                                                             "\n\n"
+                                                                            "\n---\n" 
 
-                                                                            "Val\n"
-                                                                            "---\n" 
-                                                                            (:val x)
-                                                                             "\n"))
+                                                                            (:val x) 
+                                                                            "\n"))
 
                                            ;; -- ERR
                                            (and (map? x) (= :err (:tag x)))
@@ -241,10 +235,7 @@
 
         {:keys [write!]} (get @*sys :talky/connection)]
     (if (connected? @*sys)
-      (do
-        (.appendLine output-channel "\nTransmitting...\n")
-
-        (write! text))
+      (write! text)
       (show-warning-message "Talky is disconnected."))))
 
 (defn ^{:cmd "talky.sendSelectionToREPL"} send-selection-to-repl [*sys ^js editor ^js edit ^js args]
