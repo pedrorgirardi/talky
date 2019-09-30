@@ -61,21 +61,20 @@
     (.createTextEditorDecorationType -window (clj->js type))))
 
 (defn connect!
-  [{:keys [host port config on-connect on-close on-data]
-    :or {config
-         {:encoder
-          (fn [data]
+  [{:keys [host port encoding encoder decoder on-connect on-close on-data]
+    :or {encoder
+         (fn [data]
             ;; See https://nodejs.org/api/net.html#net_socket_write_data_encoding_callback
-            data)
+           data)
 
           ;; You can also set the encoding.
           ;; See https://nodejs.org/api/net.html#net_socket_setencoding_encoding
           ;; :encoding "utf8"
 
-          :decoder
-          (fn [buffer-or-string]
+         decoder
+         (fn [buffer-or-string]
             ;; See https://nodejs.org/api/net.html#net_event_data
-            buffer-or-string)}
+           buffer-or-string)
 
          on-connect
          (fn []
@@ -92,9 +91,7 @@
            ;; Do stuff and returns nil.
            nil)}
     :as this}]
-  (let [{:keys [encoding encoder decoder]} config
-
-        socket (doto (net/connect #js {:host host :port port})
+  (let [socket (doto (net/connect #js {:host host :port port})
                  (.once "connect" (fn []
                                     (on-connect)))
 
@@ -133,12 +130,7 @@
                         :value (str 5555)})
                       (fn [port]
                         (when port
-                          (let [config
-                                {:encoding "utf8"
-                                 :encoder #(str % "\n")
-                                 :decoder identity}
-
-                                on-connect
+                          (let [on-connect
                                 (fn []
                                   (swap! *sys update :talky/connection merge {:connected? true
                                                                               :connecting? false})
@@ -173,7 +165,9 @@
                                 connection
                                 (connect! {:host host
                                            :port (js/parseInt port)
-                                           :config config
+                                           :encoding "utf8"
+                                           :encoder #(str % "\n")
+                                           :decoder identity
                                            :on-connect on-connect
                                            :on-close on-close
                                            :on-data on-data})]
