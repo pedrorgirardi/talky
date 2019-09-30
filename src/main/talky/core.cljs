@@ -1,7 +1,5 @@
 (ns talky.core
   (:require
-   [cljs.reader :as reader]
-   [fipp.edn :refer [pprint] :rename {pprint fipp}]
    ["vscode" :as vscode]
    ["net" :as net]))
 
@@ -99,8 +97,10 @@
         socket (doto (net/connect #js {:host host :port port})
                  (.once "connect" (fn []
                                     (on-connect)))
+
                  (.once "close" (fn [error?]
                                   (on-close error?)))
+
                  (.on "data" (fn [buffer]
                                (on-data (decoder buffer)))))
 
@@ -167,47 +167,8 @@
 
                                 on-data
                                 (fn [data]
-                                  (let [^js output-channel (get @*sys :talky/output-channel)
-
-                                        parsed (try
-                                                 (reader/read-string (str "[" data "]"))
-                                                 (catch js/Error e
-                                                   (js/console.error "Failed to read-string." data)))]
-
-                                    (if (nil? parsed)
-                                      (do
-                                        (.appendLine output-channel (str data "\n"))
-                                        (show-error-message data))
-                                      (run!
-                                       (fn [x]
-                                         (cond
-                                           ;; -- RET
-                                           (and (map? x) (= :ret (:tag x)))
-                                           (.appendLine output-channel (str "-------------------------\n"
-                                                                            "*ns* " (:ns x) "\n\n"
-
-                                                                            (:form x)
-                                                                            "\n---\n" 
-
-                                                                            (:val x) 
-                                                                            "\n"))
-
-                                           ;; -- ERR
-                                           (and (map? x) (= :err (:tag x)))
-                                           (.appendLine output-channel (str "Err\n" 
-                                                                            "---\n" 
-                                                                            (:val x) 
-                                                                            "\n"))
-
-                                           ;; -- OUT
-                                           (and (map? x) (= :out (:tag x)))
-                                           (.appendLine output-channel (:val x))
-
-                                           :else
-                                           (.appendLine output-channel (str x "\n")))
-                                           
-                                           (.show output-channel true))
-                                       parsed))))
+                                  (let [^js output-channel (get @*sys :talky/output-channel)]
+                                    (.appendLine output-channel data)))
 
                                 connection
                                 (connect! {:host host
@@ -235,23 +196,13 @@
 
         {:keys [write!]} (get @*sys :talky/connection)]
     (if (connected? @*sys)
-      (write! text)
+      (do
+        (.appendLine output-channel (str text "\n"))
+        (write! text))
       (show-warning-message "Talky is disconnected."))))
 
 (defn ^{:cmd "talky.sendSelectionToREPL"} send-selection-to-repl [*sys ^js editor ^js edit ^js args]
   (->> (selected-text editor)
-       (transmit! *sys)))
-
-(defn ^{:cmd "talky.meta"} cmd-meta [*sys ^js editor ^js edit ^js args]
-  (->> (str "(meta #'" (selected-text editor) ")")
-       (transmit! *sys)))
-
-(defn ^{:cmd "talky.doc"} cmd-doc [*sys ^js editor ^js edit ^js args]
-  (->> (str "(clojure.repl/doc " (selected-text editor) ")")
-       (transmit! *sys)))
-
-(defn ^{:cmd "talky.source"} cmd-source [*sys ^js editor ^js edit ^js args]
-  (->> (str "(clojure.repl/source " (selected-text editor) ")")
        (transmit! *sys)))
 
 (def *sys
@@ -272,15 +223,6 @@
        (register-disposable context))
 
   (->> (register-text-editor-command *sys #'send-selection-to-repl)
-       (register-disposable context))
-
-  (->> (register-text-editor-command *sys #'cmd-meta)
-       (register-disposable context))
-
-  (->> (register-text-editor-command *sys #'cmd-doc)
-       (register-disposable context))
-
-  (->> (register-text-editor-command *sys #'cmd-source)
        (register-disposable context))
 
   (reset! *sys {:talky/output-channel (.createOutputChannel -window "Talky")})

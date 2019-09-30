@@ -17,10 +17,7 @@
     "activationEvents": [
         "onCommand:talky.connect",
         "onCommand:talky.disconnect",
-        "onCommand:talky.sendSelectionToREPL",
-        "onCommand:talky.meta",
-        "onCommand:talky.doc",
-        "onCommand:talky.source"
+        "onCommand:talky.sendSelectionToREPL"
     ],
     "main": "./extension",
     "contributes": {
@@ -39,21 +36,6 @@
                 "title": "Send Selection to REPL",
                 "category": "Talky",
                 "command": "talky.sendSelectionToREPL"
-            },
-            {
-                "title": "Meta",
-                "category": "Talky",
-                "command": "talky.meta"
-            },
-            {
-                "title": "Doc",
-                "category": "Talky",
-                "command": "talky.doc"
-            },
-            {
-                "title": "Source",
-                "category": "Talky",
-                "command": "talky.source"
             }
         ]
     },
