@@ -184,13 +184,13 @@
                                            ;; -- RET
                                            (and (map? x) (= :ret (:tag x)))
                                            (do
-                                             (.appendLine output-channel (str (:form x) "\n▼\n" (:val x) "\n"))
+                                             (.appendLine output-channel (str (:form x) "\n---\n" (:val x) "\n"))
                                              (show-information-message (:val x)))
 
                                            ;; -- ERR
                                            (and (map? x) (= :err (:tag x)))
                                            (do
-                                             (.appendLine output-channel (str (:val x) "\n"))
+                                             (.appendLine output-channel (str "ERROR:\n" (:val x) "\n"))
                                              (show-error-message (:val x)))
 
                                            ;; -- OUT
