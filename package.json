@@ -19,7 +19,8 @@
         "onCommand:talky.disconnect",
         "onCommand:talky.sendSelectionToREPL",
         "onCommand:talky.meta",
-        "onCommand:talky.doc"
+        "onCommand:talky.doc",
+        "onCommand:talky.source"
     ],
     "main": "./extension",
     "contributes": {
@@ -48,6 +49,11 @@
                 "title": "Doc",
                 "category": "Talky",
                 "command": "talky.doc"
+            },
+            {
+                "title": "Source",
+                "category": "Talky",
+                "command": "talky.source"
             }
         ]
     },

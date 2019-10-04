@@ -244,7 +244,11 @@
        (transmit! *sys)))
 
 (defn ^{:cmd "talky.doc"} cmd-doc [*sys ^js editor ^js edit ^js args]
-  (->> (str "(doc " (selected-text editor) ")")
+  (->> (str "(clojure.repl/doc " (selected-text editor) ")")
+       (transmit! *sys)))
+
+(defn ^{:cmd "talky.source"} cmd-source [*sys ^js editor ^js edit ^js args]
+  (->> (str "(clojure.repl/source " (selected-text editor) ")")
        (transmit! *sys)))
 
 (def *sys
@@ -271,6 +275,9 @@
        (register-disposable context))
 
   (->> (register-text-editor-command *sys #'cmd-doc)
+       (register-disposable context))
+
+  (->> (register-text-editor-command *sys #'cmd-source)
        (register-disposable context))
 
   (reset! *sys {:talky/output-channel (.createOutputChannel -window "Talky")})
