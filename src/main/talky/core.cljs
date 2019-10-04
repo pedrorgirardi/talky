@@ -183,24 +183,36 @@
                                          (cond
                                            ;; -- RET
                                            (and (map? x) (= :ret (:tag x)))
-                                           (do
-                                             (.appendLine output-channel (str (:form x) "\n---\n" (:val x) "\n"))
-                                             (show-information-message (:val x)))
+                                           (.appendLine output-channel (str "*ns*\n"
+                                                                            "----\n"
+                                                                            (:ns x)
+                                                                             "\n\n"
+
+                                                                            "Form\n"
+                                                                            "----\n" 
+                                                                            (:form x)
+                                                                             "\n\n"
+
+                                                                            "Val\n"
+                                                                            "---\n" 
+                                                                            (:val x)
+                                                                             "\n"))
 
                                            ;; -- ERR
                                            (and (map? x) (= :err (:tag x)))
-                                           (do
-                                             (.appendLine output-channel (str "ERROR:\n" (:val x) "\n"))
-                                             (show-error-message (:val x)))
+                                           (.appendLine output-channel (str "Err\n" 
+                                                                            "---\n" 
+                                                                            (:val x) 
+                                                                            "\n"))
 
                                            ;; -- OUT
                                            (and (map? x) (= :out (:tag x)))
-                                           (do
-                                             (.appendLine output-channel (str (:val x) "\n"))
-                                             (show-information-message (:val x)))
+                                           (.appendLine output-channel (:val x))
 
                                            :else
-                                           (.appendLine output-channel (str x "\n"))))
+                                           (.appendLine output-channel (str x "\n")))
+                                           
+                                           (.show output-channel true))
                                        parsed))))
 
                                 connection
@@ -230,7 +242,7 @@
         {:keys [write!]} (get @*sys :talky/connection)]
     (if (connected? @*sys)
       (do
-        (.appendLine output-channel "Transmitting...\n")
+        (.appendLine output-channel "\nTransmitting...\n")
 
         (write! text))
       (show-warning-message "Talky is disconnected."))))
