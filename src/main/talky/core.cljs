@@ -219,11 +219,13 @@
       (end!)
       (show-information-message "Talky is disconnected."))))
 
-(defn ^{:cmd "talky.sendSelectionToREPL"} send-selection-to-repl [*sys ^js editor ^js edit ^js args]
+(defn- selected-text [^js editor]
+  (let [^js document (.-document editor)
+        ^js selection (.-selection editor)]
+    (.getText document selection)))
+
+(defn- transmit! [*sys text]
   (let [^js output-channel (get @*sys :talky/output-channel)
-        ^js document (.-document editor)
-        ^js selection (.-selection editor)
-        text (.getText document selection)
 
         {:keys [write!]} (get @*sys :talky/connection)]
     (if (connected? @*sys)
@@ -233,33 +235,17 @@
         (write! text))
       (show-warning-message "Talky is disconnected."))))
 
+(defn ^{:cmd "talky.sendSelectionToREPL"} send-selection-to-repl [*sys ^js editor ^js edit ^js args]
+  (->> (selected-text editor)
+       (transmit! *sys)))
+
 (defn ^{:cmd "talky.meta"} cmd-meta [*sys ^js editor ^js edit ^js args]
-  (let [^js output-channel (get @*sys :talky/output-channel)
-        ^js document (.-document editor)
-        ^js selection (.-selection editor)
-        text (.getText document selection)
-
-        {:keys [write!]} (get @*sys :talky/connection)]
-    (if (connected? @*sys)
-      (do
-        (.appendLine output-channel "Transmitting...\n")
-
-        (write! (str "(meta #'" text ")")))
-      (show-warning-message "Talky is disconnected."))))
+  (->> (str "(meta #'" (selected-text editor) ")")
+       (transmit! *sys)))
 
 (defn ^{:cmd "talky.doc"} cmd-doc [*sys ^js editor ^js edit ^js args]
-  (let [^js output-channel (get @*sys :talky/output-channel)
-        ^js document (.-document editor)
-        ^js selection (.-selection editor)
-        text (.getText document selection)
-
-        {:keys [write!]} (get @*sys :talky/connection)]
-    (if (connected? @*sys)
-      (do
-        (.appendLine output-channel "Transmitting...\n")
-
-        (write! (str "(clojure.repl/doc " text ")")))
-      (show-warning-message "Talky is disconnected."))))
+  (->> (str "(doc " (selected-text editor) ")")
+       (transmit! *sys)))
 
 (def *sys
   (atom {}))

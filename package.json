@@ -17,7 +17,9 @@
     "activationEvents": [
         "onCommand:talky.connect",
         "onCommand:talky.disconnect",
-        "onCommand:talky.sendSelectionToREPL"
+        "onCommand:talky.sendSelectionToREPL",
+        "onCommand:talky.meta",
+        "onCommand:talky.doc"
     ],
     "main": "./extension",
     "contributes": {
