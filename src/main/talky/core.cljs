@@ -233,6 +233,34 @@
         (write! text))
       (show-warning-message "Talky is disconnected."))))
 
+(defn ^{:cmd "talky.meta"} cmd-meta [*sys ^js editor ^js edit ^js args]
+  (let [^js output-channel (get @*sys :talky/output-channel)
+        ^js document (.-document editor)
+        ^js selection (.-selection editor)
+        text (.getText document selection)
+
+        {:keys [write!]} (get @*sys :talky/connection)]
+    (if (connected? @*sys)
+      (do
+        (.appendLine output-channel "Transmitting...\n")
+
+        (write! (str "(meta #'" text ")")))
+      (show-warning-message "Talky is disconnected."))))
+
+(defn ^{:cmd "talky.doc"} cmd-doc [*sys ^js editor ^js edit ^js args]
+  (let [^js output-channel (get @*sys :talky/output-channel)
+        ^js document (.-document editor)
+        ^js selection (.-selection editor)
+        text (.getText document selection)
+
+        {:keys [write!]} (get @*sys :talky/connection)]
+    (if (connected? @*sys)
+      (do
+        (.appendLine output-channel "Transmitting...\n")
+
+        (write! (str "(clojure.repl/doc " text ")")))
+      (show-warning-message "Talky is disconnected."))))
+
 (def *sys
   (atom {}))
 
@@ -251,6 +279,12 @@
        (register-disposable context))
 
   (->> (register-text-editor-command *sys #'send-selection-to-repl)
+       (register-disposable context))
+
+  (->> (register-text-editor-command *sys #'cmd-meta)
+       (register-disposable context))
+
+  (->> (register-text-editor-command *sys #'cmd-doc)
        (register-disposable context))
 
   (reset! *sys {:talky/output-channel (.createOutputChannel -window "Talky")})

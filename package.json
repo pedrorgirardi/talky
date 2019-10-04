@@ -36,6 +36,16 @@
                 "title": "Send Selection to REPL",
                 "category": "Talky",
                 "command": "talky.sendSelectionToREPL"
+            },
+            {
+                "title": "Meta",
+                "category": "Talky",
+                "command": "talky.meta"
+            },
+            {
+                "title": "Doc",
+                "category": "Talky",
+                "command": "talky.doc"
             }
         ]
     },
