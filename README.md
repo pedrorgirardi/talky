@@ -2,6 +2,4 @@
 
 Talk to a Clojure socket-based REPL.
 
-<img src="https://github.com/pedrorgirardi/talky/blob/master/doc/Screen%20Shot%20on%202019-08-10%20at%2009_27_36.png?raw=true">
-<img src="https://github.com/pedrorgirardi/talky/blob/master/doc/Screen%20Shot%20on%202019-08-10%20at%2009_21_03.png?raw=true">
-<img src="https://github.com/pedrorgirardi/talky/blob/master/doc/Screen%20Shot%20on%202019-08-10%20at%2009_22_11.png?raw=true">
+<img src="https://github.com/pedrorgirardi/talky/blob/1c84af23cad3bbc5019de681b2dbc763a5f1148d/doc/Screen%20Shot%202021-10-10.png">
