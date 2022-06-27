@@ -5,8 +5,33 @@
 
  :builds
  {:extension
-  {:target :node-library
+  {;; The :target :node-library emits code that can be used (via require) as a standard node library,
+   ;; and is useful for publishing your code for re-use as a compiled Javascript artifact.
+   ;;
+   ;; See https://shadow-cljs.github.io/docs/UsersGuide.html#target-node-library
+   :target :node-library
+   :js-options
+   {;; Resolves the JS via node_modules and includes a minified version
+    ;; of each referenced file in the build.
+    ;; It is the default for the :browser target.
+    ;; node_modules sources do not go through :advanced compilation.
+    ;;
+    ;; See https://shadow-cljs.github.io/docs/UsersGuide.html#js-provider
+    :js-provider :shadow
+    :keep-native-requires true
+    :keep-as-require #{"vscode"}}
+
+   ;; To help deal with Externs the shadow-cljs compiler provides enhanced externs inference
+   ;; which can be enabled by setting :infer-externs :auto for your build.
+   ;;
+   ;; With :auto the compiler will perform additional checks at compile time for your files only.
+   ;; It won’t warn you about possible externs issues in library code.
+   ;;
+   ;; See https://shadow-cljs.github.io/docs/UsersGuide.html#infer-externs
+   :compiler-options {:infer-externs :auto}
+
    :output-to "extension.js"
+
    :exports
    {:activate talky.core/activate
     :deactivate talky.core/deactivate}}}}
