@@ -7,3 +7,4 @@ extension.js
 pom.xml
 *.idea/
 *.DS_Store
+.clj-kondo/
