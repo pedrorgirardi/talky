@@ -82,15 +82,14 @@
            nil)
 
          on-close
-         (fn [error?]
+         (fn [_error?]
            ;; Do stuff and returns nil.
            nil)
 
          on-data
-         (fn [buffer-or-string]
+         (fn [_buffer-or-string]
            ;; Do stuff and returns nil.
-           nil)}
-    :as this}]
+           nil)}}]
   (let [socket (doto (net/connect #js {:host host :port port})
                  (.once "connect" (fn []
                                     (on-connect)))
@@ -195,7 +194,7 @@
         (write! text))
       (show-warning-message "Talky is disconnected."))))
 
-(defn ^{:cmd "talky.sendSelectionToREPL"} send-selection-to-repl [*sys ^js editor ^js edit ^js args]
+(defn ^{:cmd "talky.sendSelectionToREPL"} send-selection-to-repl [*sys ^js editor ^js _edit ^js _args]
   (->> (selected-text editor)
        (transmit! *sys)))
 
