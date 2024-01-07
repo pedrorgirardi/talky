@@ -14,11 +14,7 @@
         "type": "git",
         "url": "https://github.com/pedrorgirardi/talky.git"
     },
-    "activationEvents": [
-        "onCommand:talky.connect",
-        "onCommand:talky.disconnect",
-        "onCommand:talky.sendSelectionToREPL"
-    ],
+    "activationEvents": [],
     "main": "./extension",
     "contributes": {
         "commands": [
